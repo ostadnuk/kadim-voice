@@ -221,37 +221,47 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
               — WELCOME TO —
             </span>
 
-            {/* MAIN TITLE — glitched */}
+            {/* MAIN TITLE — prismatic chromatic aberration */}
+            <style>{`
+              @keyframes prism {
+                0%,100% { transform: translateX(0);   opacity: 0; }
+                10%      { opacity: 0.28; }
+                50%      { transform: translateX(var(--px)); opacity: 0.22; }
+                90%      { opacity: 0; }
+              }
+              .prism-c { animation: prism 6s cubic-bezier(0.625,0.05,0,1) infinite;       --px: -3px; }
+              .prism-r { animation: prism 6s cubic-bezier(0.625,0.05,0,1) infinite 0.06s; --px:  3px; }
+            `}</style>
             <div style={{ position: "relative", lineHeight: 0.88 }}>
-              {/* rust glitch layer — bright version for visibility */}
-              <span className="glitch-r" style={{
+              {/* cyan — shifts left */}
+              <span className="prism-c" style={{
                 position: "absolute", inset: 0,
                 fontFamily: current.font, fontWeight: current.weight,
                 fontSize: "clamp(4rem, 22vw, 9rem)",
-                letterSpacing: "0.06em", color: "#E8623A",
-                whiteSpace: "nowrap",
+                letterSpacing: "0.06em", color: "#00eeff",
+                mixBlendMode: "screen", whiteSpace: "nowrap",
+                pointerEvents: "none",
               }}>
                 {titleDisplay}
               </span>
-              {/* teal glitch layer — bright version for visibility */}
-              <span className="glitch-b" style={{
+              {/* red — shifts right */}
+              <span className="prism-r" style={{
                 position: "absolute", inset: 0,
                 fontFamily: current.font, fontWeight: current.weight,
                 fontSize: "clamp(4rem, 22vw, 9rem)",
-                letterSpacing: "0.06em", color: "#5BAF8A",
-                whiteSpace: "nowrap",
+                letterSpacing: "0.06em", color: "#ff2060",
+                mixBlendMode: "screen", whiteSpace: "nowrap",
+                pointerEvents: "none",
               }}>
                 {titleDisplay}
               </span>
-              {/* real text */}
+              {/* real text — white, no glow */}
               <span style={{
                 position: "relative",
                 fontFamily: current.font, fontWeight: current.weight,
                 fontSize: "clamp(4rem, 22vw, 9rem)",
                 letterSpacing: "0.06em",
-                color: "#fff",
-                textShadow: `0 0 8px rgba(255,255,255,0.9), 0 0 20px ${current.glow}, 0 0 60px ${current.glow}, 0 0 120px ${current.glow.replace(".55","0.25")}`,
-                transition: 'text-shadow 0.6s cubic-bezier(0.625,0.05,0,1)',
+                color: "#ffffff",
                 whiteSpace: "nowrap",
                 display: "block",
               }}>
@@ -260,16 +270,14 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
             </div>
 
             {/* divider line */}
-            <div style={{ width: "100%", height: 1, background: current.color, opacity: 0.25, transition: 'background 0.6s cubic-bezier(0.625,0.05,0,1)' }} />
+            <div style={{ width: "100%", height: 1, background: current.color, opacity: 0.2 }} />
 
-            {/* subtitle */}
+            {/* subtitle — no glow */}
             <span style={{
               fontFamily: FONT.base, fontWeight: 400,
               fontSize: TYPE.sm,
               letterSpacing: TRACK.caps, textTransform: "uppercase",
-              color: COLOR.text, opacity: OPACITY.primary,
-              textShadow: `0 0 12px ${current.glow}`,
-              transition: 'text-shadow 0.6s cubic-bezier(0.625,0.05,0,1)',
+              color: COLOR.text, opacity: OPACITY.secondary,
             }}>
               {subDisplay}
             </span>
