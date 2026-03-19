@@ -1,0 +1,9 @@
+{
+  "name": "Kadim Screen Push",
+  "id": "kadim-screen-push-local",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": [
+    "figma"
+  ]
+}

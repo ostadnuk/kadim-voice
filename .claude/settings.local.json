@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp add --transport http figma-remote-mcp https://mcp.figma.com/mcp)",
+      "Bash(unzip -q \"/Users/olgastadnuk/Downloads/b_FT5nib63AM0-1773573371496.zip\" -d project)",
+      "Bash(unzip -q \"/Users/olgastadnuk/Downloads/b_FT5nib63AM0-1773573371496.zip\" -d \"/Users/olgastadnuk/Downloads/kadim-project\")",
+      "Bash(pnpm --version)",
+      "Bash(npm --version)",
+      "Bash(curl -fsSL https://get.pnpm.io/install.sh)",
+      "Bash(sh -)",
+      "Bash(source /Users/olgastadnuk/.zshrc)",
+      "Bash(export PNPM_HOME=\"/Users/olgastadnuk/Library/pnpm\")",
+      "Bash(export PATH=\"$PNPM_HOME:$PATH\")",
+      "Bash(pnpm install:*)",
+      "mcp__Figma__get_metadata",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(node scripts/screenshot-screens.mjs)",
+      "Bash(claude mcp:*)",
+      "Read(//Users/olgastadnuk/Downloads/**)",
+      "Bash(unzip -l /Users/olgastadnuk/Downloads/b_FT5nib63AM0-1773573371496.zip)",
+      "Bash(unzip -o /Users/olgastadnuk/Downloads/b_FT5nib63AM0-1773573371496.zip -d /Users/olgastadnuk/Kadim/)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(pkill -f \"next dev\")",
+      "mcp__figma-desktop__get_screenshot",
+      "mcp__figma-desktop__get_design_context"
+    ]
+  }
+}

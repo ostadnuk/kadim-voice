@@ -1,0 +1,92 @@
+@import url("https://use.typekit.net/dnc6qmb.css");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 35 30% 3%;
+    --foreground: 40 53% 78%;
+    --card: 35 30% 5%;
+    --card-foreground: 40 53% 78%;
+    --popover: 35 30% 5%;
+    --popover-foreground: 40 53% 78%;
+    --primary: 40 57% 53%;
+    --primary-foreground: 35 30% 3%;
+    --secondary: 38 44% 11%;
+    --secondary-foreground: 40 53% 78%;
+    --muted: 38 44% 11%;
+    --muted-foreground: 38 22% 40%;
+    --accent: 38 44% 15%;
+    --accent-foreground: 40 53% 78%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 40 53% 78%;
+    --border: 38 44% 11%;
+    --input: 38 44% 11%;
+    --ring: 40 57% 53%;
+    --radius: 0rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background: #0d0b0e;
+    color: #f0ece4;
+    font-family: "narkiss-yair-variable", sans-serif;
+  }
+}
+
+/* ── Shared design-system utilities ── */
+
+@keyframes ds-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.ds-cursor {
+  animation: ds-blink 1s step-end infinite;
+}
+
+.ds-scanlines {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px, transparent 3px,
+    rgba(0, 0, 0, 0.13) 3px, rgba(0, 0, 0, 0.13) 4px
+  );
+}
+
+.ds-safe-top {
+  padding-top: max(1.25rem, calc(env(safe-area-inset-top) + 0.5rem));
+}
+.ds-safe-bottom {
+  padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem));
+}
+
+@keyframes glitch-r {
+  0%, 87%, 100% { opacity: 0; transform: translate(0,0); clip-path: none; }
+  88% { opacity: .7; clip-path: inset(22% 0 55% 0); transform: translate(-5px, 0); }
+  90% { opacity: .7; clip-path: inset(64% 0 12% 0); transform: translate(4px,  0); }
+  92% { opacity: 0; }
+}
+@keyframes glitch-b {
+  0%, 90%, 100% { opacity: 0; transform: translate(0,0); clip-path: none; }
+  91% { opacity: .6; clip-path: inset(8%  0 70% 0); transform: translate(5px,  0); }
+  93% { opacity: .6; clip-path: inset(48% 0 28% 0); transform: translate(-4px, 0); }
+  95% { opacity: 0; }
+}
+.glitch-r { animation: glitch-r 4.5s cubic-bezier(.625,.05,0,1) infinite; }
+.glitch-b { animation: glitch-b 4.5s cubic-bezier(.625,.05,0,1) infinite .12s; }

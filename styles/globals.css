@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Miriam';
+  src: url('/fonts/MiriamLibre-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Miriam';
+  src: url('/fonts/MiriamLibre-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ── Film grain overlay ──────────────────────────────────────────────────────── */
+.ds-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 300px 300px;
+  animation: grain-shift 0.4s steps(1) infinite;
+}
+
+@keyframes grain-shift {
+  0%   { transform: translate(0%,   0%)   }
+  20%  { transform: translate(-2%,  1%)   }
+  40%  { transform: translate(1%,  -2%)   }
+  60%  { transform: translate(-1%,  2%)   }
+  80%  { transform: translate(2%,  -1%)   }
+  100% { transform: translate(0%,   0%)   }
+}
+
+@layer base {
+  :root {
+    /* Kadim palette — deep near-black, warm cream, dusty rose, dark teal, rust */
+    --background: 300 10% 6%;        /* #0d0b0e — near-black with faint warm undertone */
+    --foreground: 35 18% 87%;        /* #e8e0d0 — warm cream */
+    --card: 300 8% 8%;               /* #131115 — slightly lifted dark */
+    --card-foreground: 35 18% 87%;
+    --popover: 300 8% 8%;
+    --popover-foreground: 35 18% 87%;
+    --primary: 344 41% 57%;          /* #C36981 — dusty rose */
+    --primary-foreground: 300 10% 6%;
+    --secondary: 150 14% 23%;        /* #324238 — dark teal */
+    --secondary-foreground: 35 18% 87%;
+    --muted: 300 5% 10%;             /* #1c181c — dark muted surface */
+    --muted-foreground: 315 5% 54%;  /* #8a8086 — subdued text */
+    --accent: 15 69% 38%;            /* #A53D1E — rust / terracotta */
+    --accent-foreground: 35 18% 87%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 35 18% 87%;
+    --border: 308 10% 20%;           /* #382e36 — dark warm border */
+    --input: 308 10% 20%;
+    --ring: 345 38% 62%;             /* matches primary */
+    --chart-1: 345 38% 62%;          /* dusty rose */
+    --chart-2: 162 32% 28%;          /* teal */
+    --chart-3: 10 63% 44%;           /* rust */
+    --chart-4: 330 25% 50%;          /* mauve */
+    --chart-5: 25 45% 45%;           /* warm brown */
+    --radius: 0.5rem;
+    --sidebar-background: 300 8% 8%;
+    --sidebar-foreground: 35 18% 87%;
+    --sidebar-primary: 345 38% 62%;
+    --sidebar-primary-foreground: 300 10% 6%;
+    --sidebar-accent: 300 5% 10%;
+    --sidebar-accent-foreground: 35 18% 87%;
+    --sidebar-border: 308 10% 20%;
+    --sidebar-ring: 345 38% 62%;
+  }
+  .dark {
+    --background: 300 10% 6%;
+    --foreground: 35 18% 87%;
+    --card: 300 8% 8%;
+    --card-foreground: 35 18% 87%;
+    --popover: 300 8% 8%;
+    --popover-foreground: 35 18% 87%;
+    --primary: 345 38% 62%;
+    --primary-foreground: 300 10% 6%;
+    --secondary: 162 32% 18%;
+    --secondary-foreground: 35 18% 87%;
+    --muted: 300 5% 10%;
+    --muted-foreground: 315 5% 54%;
+    --accent: 10 63% 34%;
+    --accent-foreground: 35 18% 87%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 35 18% 87%;
+    --border: 308 10% 20%;
+    --input: 308 10% 20%;
+    --ring: 345 38% 62%;
+    --chart-1: 345 38% 62%;
+    --chart-2: 162 32% 28%;
+    --chart-3: 10 63% 44%;
+    --chart-4: 330 25% 50%;
+    --chart-5: 25 45% 45%;
+    --sidebar-background: 300 8% 8%;
+    --sidebar-foreground: 35 18% 87%;
+    --sidebar-primary: 345 38% 62%;
+    --sidebar-primary-foreground: 300 10% 6%;
+    --sidebar-accent: 300 5% 10%;
+    --sidebar-accent-foreground: 35 18% 87%;
+    --sidebar-border: 308 10% 20%;
+    --sidebar-ring: 345 38% 62%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
