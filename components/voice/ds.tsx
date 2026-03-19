@@ -20,11 +20,11 @@ export const COLOR = {
   // Background
   bg:        "#14111a",   // deep dark — slightly lifted from pure black for eye comfort
 
-  // Brand accents (for large text, buttons, decorative)
-  amber:     "#C36981",   // EN — dusty rose
-  copper:    "#A53D1E",   // HE — rust / terracotta
-  teal:      "#5a8f78",   // AR — brightened teal (was #324238, now ~3:1 on dark bg)
-  tealDeep:  "#324238",   // original teal for gradient blobs only
+  // Accent — monochrome
+  amber:     "#f0ece4",
+  copper:    "#f0ece4",
+  teal:      "#f0ece4",
+  tealDeep:  "#f0ece4",
 
   // Text
   text:      "#f0ece4",   // primary body — warm near-white, high contrast

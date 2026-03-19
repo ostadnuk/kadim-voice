@@ -11,9 +11,9 @@ interface ScreenWelcomeProps {
 }
 
 const TITLES: { lang: Language; title: string; sub: string; cta: string; dir: string; color: string; glow: string; font: string; weight: number }[] = [
-  { lang: "en", title: "KADIM", sub: "VOICE SIGNATURES ARCHIVE", cta: "ENTER ARCHIVE",    dir: "ltr", color: "#C36981", glow: "rgba(195,105,129,0.55)", font: "'narkiss-yair-variable'", weight: 700 },
-  { lang: "he", title: "קדים",  sub: "ארכיון חתימות קול",         cta: "כניסה לארכיון",  dir: "rtl", color: "#A53D1E", glow: "rgba(165,61,30,0.55)",   font: "'narkiss-yair-variable'",  weight: 700 },
-  { lang: "ar", title: "قديم",  sub: "أرشيف توقيعات الصوت",       cta: "ادخل الأرشيف",   dir: "rtl", color: "#324238", glow: "rgba(50,66,56,0.55)",    font: "'narkiss-yair-variable'",  weight: 700 },
+  { lang: "en", title: "KADIM", sub: "VOICE SIGNATURES ARCHIVE", cta: "ENTER ARCHIVE",    dir: "ltr", color: "#f0ece4", glow: "rgba(240,236,228,0.45)", font: "'narkiss-yair-variable'", weight: 700 },
+  { lang: "he", title: "קדים",  sub: "ארכיון חתימות קול",         cta: "כניסה לארכיון",  dir: "rtl", color: "#f0ece4", glow: "rgba(240,236,228,0.45)",   font: "'narkiss-yair-variable'",  weight: 700 },
+  { lang: "ar", title: "قديم",  sub: "أرشيف توقيعات الصوت",       cta: "ادخل الأرشيف",   dir: "rtl", color: "#f0ece4", glow: "rgba(240,236,228,0.45)",    font: "'narkiss-yair-variable'",  weight: 700 },
 ]
 
 const SCRAMBLE_CHARS = "░▒▓▄▀◆◇▪□▸⊗⊕01!><∷⋯"
@@ -139,12 +139,12 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
           style={{ width: "100%", height: "100%" }}
           gl={{ antialias: true, alpha: false }}
         >
-          <color attach="background" args={["#0d0b0e"]} />
-          <fog   attach="fog"        args={["#0d0b0e", 20, 80]} />
-          <ambientLight intensity={0.35} />
-          <directionalLight position={[3, 5, 3]}  intensity={1.5} color="#ffe8c0" />
-          <directionalLight position={[-3,1,-2]}   intensity={0.4} color="#c0a880" />
-          <pointLight       position={[0, 0, 3]}   intensity={0.7} color="#ffb060" distance={12} />
+          <color attach="background" args={["#14111a"]} />
+          <fog   attach="fog"        args={["#14111a", 20, 80]} />
+          <ambientLight intensity={0.4} />
+          <directionalLight position={[3, 5, 3]}  intensity={1.6} color="#ffffff" />
+          <directionalLight position={[-3,1,-2]}   intensity={0.3} color="#d0ccc8" />
+          <pointLight       position={[0, 0, 3]}   intensity={0.5} color="#ffffff" distance={12} />
           <Stars radius={90} depth={60} count={5000} factor={3} saturation={0} fade speed={0.2} />
           <Suspense fallback={null}>
             <VesselModel isDragging={isDragging} dragDelta={dragDelta} />
