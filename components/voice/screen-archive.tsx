@@ -11,7 +11,7 @@ import type { ArchiveEntry } from "@/lib/types"
 import { Play, Pause } from "lucide-react"
 import {
   DSShell, DSTopBar, DSBack, DSDivider, DSStatusLine,
-  SignalBar, COLOR, FONT,
+  SignalBar, COLOR, FONT, LANG_COLOR, TYPE, TRACK, OPACITY, TOUCH_MIN,
 } from "./ds"
 import { Globe3D } from "./globe-3d"
 import type { Language } from "@/lib/i18n"
@@ -19,12 +19,6 @@ import type { Language } from "@/lib/i18n"
 interface ScreenArchiveProps {
   language?: Language
   onBack: () => void
-}
-
-const LANG_COLOR: Record<Language, string> = {
-  en: "#c8a048",
-  he: "#c07848",
-  ar: "#50b09a",
 }
 
 const LANG_FONT: Record<Language, string> = {
@@ -88,8 +82,8 @@ function WorldClock({ color }: { color: string }) {
   const unix = Math.floor(time.getTime() / 1000)
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <div style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: "0.15em", color, opacity: 0.6 }}>UTC  {utc}</div>
-      <div style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: "0.12em", color, opacity: 0.38 }}>UNIX {unix}</div>
+      <div style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.caps, color, opacity: 0.6 }}>UTC  {utc}</div>
+      <div style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: "0.12em", color, opacity: OPACITY.tertiary }}>UNIX {unix}</div>
     </div>
   )
 }
@@ -133,11 +127,11 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
   const totalPages = Math.ceil(total / 12)
 
   const selectStyle: React.CSSProperties = {
-    height: 32, background: "transparent",
+    height: TOUCH_MIN, background: "transparent",
     border: `1px solid ${COLOR.veryDim}`, borderRadius: 0,
-    color: COLOR.secondary, fontFamily: FONT.mono, fontSize: 10,
+    color: COLOR.secondary, fontFamily: FONT.base, fontSize: TYPE.hud,
     padding: "0 10px", outline: "none", appearance: "none",
-    WebkitAppearance: "none", letterSpacing: "0.15em", cursor: "pointer",
+    WebkitAppearance: "none", letterSpacing: TRACK.caps, cursor: "pointer",
   }
 
   return (
@@ -156,7 +150,7 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
               <h1 style={{ fontFamily: font, fontWeight: 700, fontSize: "clamp(1.3rem, 7vw, 2rem)", letterSpacing: "0.04em", color, lineHeight: 1 }}>
                 {t.title}
               </h1>
-              <p style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.15em", color, opacity: 0.5, marginTop: 4 }}>
+              <p style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: 0.5, marginTop: 4 }}>
                 {t.voices(total)} · {t.acrossTime}
               </p>
             </div>
@@ -189,11 +183,11 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
         {/* grid */}
         {loading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
-            <span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.2em", color, opacity: 0.45 }}>{t.loading}</span>
+            <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: OPACITY.primary }}>{t.loading}</span>
           </div>
         ) : entries.length === 0 ? (
           <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
-            <span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.15em", color: COLOR.secondary }}>{t.noEntries}</span>
+            <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color: COLOR.secondary }}>{t.noEntries}</span>
           </div>
         ) : (
           <>
@@ -202,16 +196,17 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
                 <button key={entry.id} onClick={() => setSelectedEntry(entry)} style={{
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
                   background: COLOR.bg, padding: "20px 12px", cursor: "pointer", textAlign: "center",
+                  minHeight: TOUCH_MIN,
                 }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#0d0b07" }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = COLOR.bg }}
                 >
                   <SignatureRing points={entry.signaturePoints} size={68} strokeWidth={1} />
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <span style={{ fontFamily: FONT.mono, fontSize: 9, letterSpacing: "0.12em", color, opacity: 0.5 }}>
+                    <span style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: "0.12em", color, opacity: 0.5 }}>
                       {fmtDate(entry.createdAt)}
                     </span>
-                    <span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.05em", color: COLOR.text, lineHeight: 1.3 }}>
+                    <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: "0.05em", color: COLOR.text, lineHeight: 1.3 }}>
                       {locLabel(entry)}
                     </span>
                   </div>
@@ -222,14 +217,14 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
             {totalPages > 1 && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 24 }}>
                 <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                  style={{ background: "none", border: "none", fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.15em", color, opacity: page === 1 ? 0.2 : 0.6, cursor: page === 1 ? "default" : "pointer" }}>
+                  style={{ background: "none", border: "none", fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: page === 1 ? 0.2 : 0.6, cursor: page === 1 ? "default" : "pointer", minHeight: TOUCH_MIN, display: "flex", alignItems: "center" }}>
                   [ {t.prev} ]
                 </button>
-                <span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.1em", color, opacity: 0.4 }}>
+                <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: "0.1em", color, opacity: OPACITY.tertiary }}>
                   {page} / {totalPages}
                 </span>
                 <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                  style={{ background: "none", border: "none", fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.15em", color, opacity: page === totalPages ? 0.2 : 0.6, cursor: page === totalPages ? "default" : "pointer" }}>
+                  style={{ background: "none", border: "none", fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: page === totalPages ? 0.2 : 0.6, cursor: page === totalPages ? "default" : "pointer", minHeight: TOUCH_MIN, display: "flex", alignItems: "center" }}>
                   [ {t.next} ]
                 </button>
               </div>
@@ -241,7 +236,7 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
       {/* entry detail */}
       <Dialog open={!!selectedEntry} onOpenChange={() => setSelectedEntry(null)}>
         {selectedEntry && (
-          <DialogContent style={{ background: COLOR.bg, border: `1px solid ${COLOR.veryDim}`, borderRadius: 0, color: COLOR.text, fontFamily: FONT.mono }}>
+          <DialogContent style={{ background: COLOR.bg, border: `1px solid ${COLOR.veryDim}`, borderRadius: 0, color: COLOR.text, fontFamily: FONT.base }}>
             <DialogHeader>
               <DialogTitle className="sr-only">Voice Signature Detail</DialogTitle>
               <DialogDescription className="sr-only">
@@ -249,7 +244,7 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
               </DialogDescription>
             </DialogHeader>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-              <span style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: "0.3em", color, opacity: 0.6 }}>{t.sigLabel}</span>
+              <span style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.caps, color, opacity: 0.6 }}>{t.sigLabel}</span>
               <SignatureRing points={selectedEntry.signaturePoints} size={140} animated />
               <div style={{ width: "100%" }}>
                 <Waveform peaks={selectedEntry.waveformPeaks} height={40} />
@@ -257,7 +252,7 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
                   <button
                     onClick={() => setPlayingId(playingId === selectedEntry.id ? null : selectedEntry.id)}
                     aria-label={playingId === selectedEntry.id ? "Pause" : "Play"}
-                    style={{ width: 38, height: 38, background: "transparent", border: `1px solid ${color}`, opacity: 0.7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color }}
+                    style={{ width: TOUCH_MIN, height: TOUCH_MIN, background: "transparent", border: `1px solid ${color}`, opacity: 0.7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color }}
                   >
                     {playingId === selectedEntry.id ? <Pause className="h-3.5 w-3.5" /> : <Play className="ml-0.5 h-3.5 w-3.5" />}
                   </button>

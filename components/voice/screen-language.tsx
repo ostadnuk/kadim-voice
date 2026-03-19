@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import type { Language } from "@/lib/i18n"
-import { COLOR, FONT } from "./ds"
+import { COLOR, FONT, LANG_COLOR, TYPE, TRACK, OPACITY, TOUCH_MIN } from "./ds"
 
 interface ScreenLanguageProps {
   onSelect: (lang: Language) => void
@@ -18,9 +18,9 @@ const ENTRIES: {
   ch:      string
   freq:    string
 }[] = [
-  { code: "en", text: "ENTER",  font: "'narkiss-yair-variable', sans-serif",         weight: 700, color: "#C36981", dir: "ltr", ch: "CH·01", freq: "440.00" },
-  { code: "he", text: "כניסה",  font: "'narkiss-yair-variable', sans-serif",     weight: 700, color: "#A53D1E", dir: "rtl", ch: "CH·02", freq: "528.00" },
-  { code: "ar", text: "ادخل",   font: "'narkiss-yair-variable', sans-serif",           weight: 700, color: "#324238", dir: "rtl", ch: "CH·03", freq: "639.00" },
+  { code: "en", text: "ENTER",  font: "'narkiss-yair-variable', sans-serif",         weight: 700, color: LANG_COLOR.en, dir: "ltr", ch: "CH·01", freq: "440.00" },
+  { code: "he", text: "כניסה",  font: "'narkiss-yair-variable', sans-serif",     weight: 700, color: LANG_COLOR.he, dir: "rtl", ch: "CH·02", freq: "528.00" },
+  { code: "ar", text: "ادخل",   font: "'narkiss-yair-variable', sans-serif",           weight: 700, color: LANG_COLOR.ar, dir: "rtl", ch: "CH·03", freq: "639.00" },
 ]
 
 const BAR_COUNT = 9
@@ -74,11 +74,11 @@ function LiveFreq({ base, color, active }: { base: string; color: string; active
 
   return (
     <span style={{
-      fontFamily: FONT.mono,
-      fontSize:   10,
-      letterSpacing: "0.18em",
+      fontFamily: FONT.base,
+      fontSize:   TYPE.hud,
+      letterSpacing: TRACK.sm,
       color,
-      opacity: active ? 0.9 : 0.35,
+      opacity: active ? 0.9 : OPACITY.tertiary,
       transition: "opacity 0.25s",
     }}>
       {val} kHz
@@ -127,6 +127,7 @@ export function ScreenLanguage({ onSelect }: ScreenLanguageProps) {
                 cursor:      "pointer",
                 padding:     0,
                 width:       "100%",
+                minHeight:   TOUCH_MIN,
                 display:     "flex",
                 flexDirection: "column",
                 alignItems:  "center",
@@ -146,11 +147,11 @@ export function ScreenLanguage({ onSelect }: ScreenLanguageProps) {
                 transition:  `opacity 0.6s ease ${idx * 0.15}s`,
               }}>
                 <span style={{
-                  fontFamily: FONT.mono,
-                  fontSize:   10,
-                  letterSpacing: "0.25em",
+                  fontFamily: FONT.base,
+                  fontSize:   TYPE.hud,
+                  letterSpacing: TRACK.wide,
                   color,
-                  opacity: isActive ? 0.9 : 0.35,
+                  opacity: isActive ? 0.9 : OPACITY.tertiary,
                   transition: "opacity 0.25s",
                 }}>
                   {ch}

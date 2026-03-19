@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { useGLTF, Environment, Stars } from "@react-three/drei"
 import * as THREE from "three"
+import { COLOR, FONT, TYPE, TRACK, OPACITY, TOUCH_MIN } from "./ds"
 
 interface ScreenWelcomeProps {
   onContinue: () => void
@@ -162,11 +163,11 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
         {/* TOP ROW — corner info */}
         <div className="ds-safe-top flex items-start justify-between px-4">
           {/* top-left: signal */}
-          <div style={{ fontFamily: "'narkiss-yair-variable'", fontSize: 11, letterSpacing: "0.15em", color: current.color, opacity: 0.7, transition: "color .6s", lineHeight: 1.6 }}>
+          <div style={{ transition: "color .6s" }}>
             <SignalBar color={current.color} />
           </div>
           {/* top-right: lang selector — tap to lock */}
-          <div style={{ display: "flex", gap: 6, alignItems: "center", paddingTop: 2 }}>
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
             {TITLES.map((t, i) => {
               const isActive = i === langIdx
               return (
@@ -177,17 +178,23 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
                     setScramble(n => n + 1)
                     setLocked(true)
                   }}
+                  aria-pressed={isActive}
                   style={{
-                    background: isActive ? t.color : "transparent",
-                    border: `1px solid ${isActive ? t.color : "#2a2030"}`,
-                    padding: "3px 8px",
-                    cursor: "pointer",
-                    fontFamily: "'narkiss-yair-variable'",
-                    fontSize: 11,
-                    letterSpacing: "0.15em",
-                    color: isActive ? "#0d0b0e" : "#6a5a70",
-                    transition: "all .3s",
+                    background:  isActive ? t.color : "transparent",
+                    border:      `1px solid ${isActive ? t.color : COLOR.veryDim}`,
+                    padding:     "0 10px",
+                    minHeight:   TOUCH_MIN,
+                    minWidth:    TOUCH_MIN,
+                    cursor:      "pointer",
+                    fontFamily:  FONT.base,
+                    fontSize:    TYPE.xs,
+                    letterSpacing: TRACK.caps,
+                    color:       isActive ? COLOR.bg : COLOR.dim,
+                    transition:  "all .3s",
                     WebkitTapHighlightColor: "transparent",
+                    display:     "flex",
+                    alignItems:  "center",
+                    justifyContent: "center",
                   }}
                 >
                   {["EN","HE","AR"][i]}
@@ -207,9 +214,9 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
 
             {/* tiny label above */}
             <span style={{
-              fontFamily: "'narkiss-yair-variable'", fontSize: 12,
-              letterSpacing: "0.4em", textTransform: "uppercase",
-              color: current.color, opacity: 0.65, transition: "color .6s",
+              fontFamily: FONT.base, fontSize: TYPE.xs,
+              letterSpacing: TRACK.caps, textTransform: "uppercase",
+              color: current.color, opacity: OPACITY.secondary, transition: "color .6s",
             }}>
               — WELCOME TO —
             </span>
@@ -257,10 +264,10 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
 
             {/* subtitle */}
             <span style={{
-              fontFamily: "'narkiss-yair-variable'", fontWeight: 400,
-              fontSize: "clamp(10px, 2.8vw, 13px)",
-              letterSpacing: "0.3em", textTransform: "uppercase",
-              color: "#fff", opacity: 0.75,
+              fontFamily: FONT.base, fontWeight: 400,
+              fontSize: TYPE.sm,
+              letterSpacing: TRACK.caps, textTransform: "uppercase",
+              color: COLOR.text, opacity: OPACITY.primary,
               textShadow: `0 0 12px ${current.glow}`,
               transition: "text-shadow .6s",
             }}>
@@ -278,9 +285,9 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
           <div className="flex items-end justify-between">
             <CoordsTicker color={current.color} />
             <span style={{
-              fontFamily: "'narkiss-yair-variable'", fontSize: 11,
-              letterSpacing: "0.2em", color: current.color,
-              opacity: 0.55, transition: "color .6s",
+              fontFamily: FONT.base, fontSize: TYPE.hud,
+              letterSpacing: TRACK.sm, color: current.color,
+              opacity: OPACITY.tertiary, transition: "color .6s",
             }}>
               drag to explore
             </span>
@@ -291,14 +298,14 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
             onClick={handleEnter}
             style={{
               width: "100%",
-              fontFamily: current.font, fontSize: "clamp(13px, 3.5vw, 17px)",
-              letterSpacing: current.lang === "en" ? "0.3em" : "0.08em",
+              fontFamily: current.font, fontSize: TYPE.sm,
+              letterSpacing: current.lang === "en" ? TRACK.caps : TRACK.sm,
               textTransform: current.lang === "en" ? "uppercase" : "none",
-              color: "#0d0b0e",
+              color: COLOR.bg,
               background: current.color,
               border: "none",
-              padding: "14px 0",
-              minHeight: 52,
+              padding: "0 24px",
+              minHeight: 56,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               transition: "background .6s",
               WebkitTapHighlightColor: "transparent",
@@ -307,7 +314,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
             }}
           >
             <span>{current.cta}</span>
-            <span className="ds-cursor" style={{ color: "#07060488" }}>▋</span>
+            <span className="ds-cursor" style={{ color: `${COLOR.bg}99` }}>▋</span>
           </button>
         </div>
       </div>
@@ -360,7 +367,7 @@ function SignalBar({ color }: { color: string }) {
     return () => clearInterval(id)
   }, [])
   return (
-    <div style={{ fontFamily: "'narkiss-yair-variable'", fontSize: 11, letterSpacing: "0.18em", color, opacity: 0.7, transition: "color .6s" }}>
+    <div style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: OPACITY.secondary, transition: "color .6s" }}>
       SIG [{("█".repeat(sig) + "░".repeat(10 - sig))}]
     </div>
   )
@@ -381,9 +388,9 @@ function CoordsTicker({ color }: { color: string }) {
   }, [])
   return (
     <div style={{
-      fontFamily: "'narkiss-yair-variable'", fontSize: 11,
-      letterSpacing: "0.12em", color, opacity: 0.55,
-      lineHeight: 1.7, transition: "color .6s",
+      fontFamily: FONT.base, fontSize: TYPE.hud,
+      letterSpacing: TRACK.sm, color, opacity: OPACITY.tertiary,
+      lineHeight: 1.8, transition: "color .6s",
     }}>
       <div>TX {vals.a}</div>
       <div>RX {vals.b}</div>

@@ -4,7 +4,7 @@ import { SignatureRing } from "./signature-ring"
 import { Waveform } from "./waveform"
 import type { LocationState, RecordingState } from "@/lib/types"
 import { translations, type Language } from "@/lib/i18n"
-import { DSShell, DSTopBar, DSBlock, DSLabel, DSButton, DSBack, DSDivider, DSStatusLine, CoordsTicker, ACCENT, FONT } from "./ds"
+import { DSShell, DSTopBar, DSBlock, DSLabel, DSButton, DSBack, DSDivider, DSStatusLine, CoordsTicker, ACCENT, FONT, TYPE, TRACK, OPACITY } from "./ds"
 
 interface ScreenResultProps {
   language:        Language
@@ -31,15 +31,15 @@ export function ScreenResult({ language, recording, location, signaturePoints, t
     <DSShell dir={dir}>
       <DSTopBar
         left={<CoordsTicker />}
-        right={<span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.2em", color: ACCENT, opacity: 0.7 }}>{t.added}</span>}
+        right={<span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: ACCENT, opacity: 0.7 }}>{t.added}</span>}
       />
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-8">
         <div className="flex w-full max-w-sm flex-col items-center gap-6">
           <DSBlock>
             <div className="flex flex-col items-center gap-2 text-center">
-              <DSLabel spacing="0.4em" opacity={0.65}>{t.heading}</DSLabel>
-              <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: "clamp(1.4rem, 8vw, 2rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT, textShadow: `0 0 30px rgba(200,160,72,0.45)`, whiteSpace: "pre-line" }}>{t.title}</p>
+              <DSLabel spacing={TRACK.caps} opacity={0.65}>{t.heading}</DSLabel>
+              <p style={{ fontFamily: FONT.base, fontWeight: 700, fontSize: "clamp(1.4rem, 8vw, 2rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT, textShadow: `0 0 30px rgba(200,160,72,0.45)`, whiteSpace: "pre-line" }}>{t.title}</p>
             </div>
           </DSBlock>
 

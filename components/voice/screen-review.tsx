@@ -4,19 +4,13 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Waveform } from "./waveform"
 import type { RecordingState } from "@/lib/types"
 import { translations, type Language } from "@/lib/i18n"
-import { DSShell, DSTopBar, DSButton, DSBack, SignalBar, COLOR, FONT } from "./ds"
+import { DSShell, DSTopBar, DSButton, DSBack, SignalBar, COLOR, FONT, LANG_COLOR, TYPE, TRACK, OPACITY } from "./ds"
 
 interface ScreenReviewProps {
   language:   Language
   recording:  RecordingState
   onContinue: () => void
   onReRecord: () => void
-}
-
-const LANG_COLOR: Record<Language, string> = {
-  en: "#c8a048",
-  he: "#c07848",
-  ar: "#50b09a",
 }
 
 const LANG_FONT: Record<Language, string> = {
@@ -95,14 +89,14 @@ export function ScreenReview({ language, recording, onContinue, onReRecord }: Sc
 
       <DSTopBar
         left={<SignalBar color={color} />}
-        right={<span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.2em", color, opacity: 0.45 }}>{content.label}</span>}
+        right={<span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: OPACITY.primary }}>{content.label}</span>}
       />
 
       <div className="relative z-10 flex flex-1 flex-col justify-between px-5 py-4">
 
         {/* Header */}
         <div style={{ animation: "sig-in 0.7s ease both", paddingTop: "clamp(0.5rem, 3vw, 1.2rem)" }}>
-          <div style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: "0.3em", color, opacity: 0.4, marginBottom: 10 }}>
+          <div style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.caps, color, opacity: OPACITY.tertiary, marginBottom: 10 }}>
             — {content.duration}: {fmt(recording.duration)} —
           </div>
           <p style={{

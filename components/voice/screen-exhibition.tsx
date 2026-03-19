@@ -2,17 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import type { Language } from "@/lib/i18n"
-import { DSShell, DSTopBar, DSButton, SignalBar, COLOR, FONT } from "./ds"
+import { DSShell, DSTopBar, DSButton, SignalBar, COLOR, FONT, LANG_COLOR, TYPE, TRACK, OPACITY } from "./ds"
 
 interface ScreenExhibitionProps {
   language:   Language
   onContinue: () => void
-}
-
-const LANG_COLOR: Record<Language, string> = {
-  en: "#C36981",
-  he: "#A53D1E",
-  ar: "#324238",
 }
 
 const LANG_FONT: Record<Language, string> = {
@@ -209,9 +203,9 @@ function VoiceprintMark({ color, visible }: { color: string; visible: boolean })
     }}>
       <canvas ref={canvasRef} style={{ width: 180, height: 180 }} />
       <span style={{
-        fontFamily: FONT.mono, fontSize: 9,
-        letterSpacing: "0.3em", textTransform: "uppercase",
-        color, opacity: 0.35,
+        fontFamily: FONT.base, fontSize: TYPE.xs,
+        letterSpacing: TRACK.caps, textTransform: "uppercase",
+        color, opacity: OPACITY.tertiary,
       }}>
         YOUR SIGNATURE · PENDING
       </span>
@@ -228,7 +222,7 @@ function EpochCounter({ color }: { color: string }) {
     return () => clearInterval(id)
   }, [])
   return (
-    <span style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: "0.18em", color, opacity: 0.35 }}>
+    <span style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.sm, color, opacity: OPACITY.tertiary }}>
       T+{ts}
     </span>
   )
@@ -286,8 +280,8 @@ export function ScreenExhibition({ language, onContinue }: ScreenExhibitionProps
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <EpochCounter color={color} />
               {!done
-                ? <button onClick={skipAll} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT.mono, fontSize: 10, letterSpacing: "0.25em", color, opacity: 0.3, WebkitTapHighlightColor: "transparent", padding: "4px 0" }}>SKIP ›</button>
-                : <span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.2em", color, opacity: 0.45 }}>VESSEL · INTERIOR</span>
+                ? <button onClick={skipAll} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.wide, color, opacity: OPACITY.tertiary, WebkitTapHighlightColor: "transparent", padding: "4px 0" }}>SKIP ›</button>
+                : <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: OPACITY.primary }}>VESSEL · INTERIOR</span>
               }
             </div>
           }
@@ -303,7 +297,7 @@ export function ScreenExhibition({ language, onContinue }: ScreenExhibitionProps
             return (
               <div key={i} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.7s ease, transform 0.7s ease" }}>
                 {frame.type === "hud" && (
-                  <div style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color, opacity: 0.4, padding: "2px 0" }}>
+                  <div style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.wide, textTransform: "uppercase", color, opacity: OPACITY.tertiary, padding: "2px 0" }}>
                     {frame.text}
                   </div>
                 )}

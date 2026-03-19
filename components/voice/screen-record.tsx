@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { LiveWaveform } from "./live-waveform"
 import type { RecordingState } from "@/lib/types"
 import { translations, type Language } from "@/lib/i18n"
-import { DSShell, DSTopBar, DSButton, DSBack, SignalBar, COLOR, FONT } from "./ds"
+import { DSShell, DSTopBar, DSButton, DSBack, SignalBar, COLOR, FONT, LANG_COLOR, TYPE, TRACK, OPACITY, TOUCH_MIN } from "./ds"
 
 interface ScreenRecordProps {
   language:   Language
@@ -13,12 +13,6 @@ interface ScreenRecordProps {
 }
 
 const MAX_DURATION = 30
-
-const LANG_COLOR: Record<Language, string> = {
-  en: "#C36981",
-  he: "#A53D1E",
-  ar: "#324238",
-}
 
 const LANG_FONT: Record<Language, string> = {
   en: "'narkiss-yair-variable', sans-serif",
@@ -176,7 +170,7 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
         <style>{`@keyframes ring-pulse { 0%,100%{transform:scale(1);opacity:var(--ro)} 50%{transform:scale(1.06);opacity:calc(var(--ro)*1.7)} }`}</style>
         <DSTopBar
           left={<SignalBar color={color} />}
-          right={<span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.2em", color, opacity: 0.45 }}>VESSEL · INTERIOR</span>}
+          right={<span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: OPACITY.primary }}>VESSEL · INTERIOR</span>}
         />
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-10 px-6">
           {/* Pulsing mic icon */}
@@ -199,7 +193,7 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
             <p style={{ fontFamily: font, fontWeight: 600, fontSize: "clamp(1.1rem, 5.5vw, 1.4rem)", lineHeight: 1.3, color, opacity: 0.9, margin: 0 }}>
               {mic.title}
             </p>
-            <p style={{ fontFamily: FONT.mono, fontSize: "clamp(11px, 3vw, 13px)", lineHeight: 1.8, letterSpacing: "0.05em", color: COLOR.text, opacity: 0.45, margin: 0 }}>
+            <p style={{ fontFamily: FONT.base, fontSize: TYPE.xs, lineHeight: 1.8, letterSpacing: "0.05em", color: COLOR.text, opacity: OPACITY.primary, margin: 0 }}>
               {mic.body}
             </p>
           </div>
@@ -223,17 +217,17 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
       <DSShell dir={dir}>
         <DSTopBar
           left={<SignalBar color={errColor} />}
-          right={<span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.2em", color: errColor, opacity: 0.7 }}>SIGNAL BLOCKED</span>}
+          right={<span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: errColor, opacity: 0.7 }}>SIGNAL BLOCKED</span>}
         />
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-8 px-6">
           <div style={{ width: 48, height: 48, border: `1px solid ${errColor}`, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.7 }}>
-            <span style={{ fontFamily: FONT.mono, fontSize: 22, color: errColor }}>✕</span>
+            <span style={{ fontFamily: FONT.base, fontSize: 22, color: errColor }}>✕</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, textAlign: dir === "rtl" ? "right" : "left", width: "100%", maxWidth: 320 }}>
             <p style={{ fontFamily: font, fontWeight: 600, fontSize: "clamp(1.1rem, 5.5vw, 1.4rem)", lineHeight: 1.3, color: errColor, opacity: 0.9, margin: 0 }}>
               {blk.title}
             </p>
-            <p style={{ fontFamily: FONT.mono, fontSize: "clamp(11px, 3vw, 13px)", lineHeight: 1.8, letterSpacing: "0.05em", color: COLOR.text, opacity: 0.45, margin: 0 }}>
+            <p style={{ fontFamily: FONT.base, fontSize: TYPE.xs, lineHeight: 1.8, letterSpacing: "0.05em", color: COLOR.text, opacity: OPACITY.primary, margin: 0 }}>
               {blk.body}
             </p>
           </div>
@@ -269,13 +263,13 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
             {isRecording && (
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#e05050", display: "inline-block", animation: "rec-dot 1s ease-in-out infinite" }} />
             )}
-            <span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.18em", color, opacity: isRecording ? 0.9 : 0.5 }}>
+            <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: isRecording ? 0.9 : 0.5 }}>
               {isRecording ? st.rec : st.ready}
             </span>
           </div>
         }
         right={
-          <span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.18em", color, opacity: 0.5 }}>
+          <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: 0.5 }}>
             {elapsed}/{MAX_DURATION}s
           </span>
         }
@@ -287,7 +281,7 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
         {/* Timer */}
         <div style={{ textAlign: "center", paddingTop: "clamp(0.5rem, 3vw, 1.5rem)" }}>
           <span style={{
-            fontFamily: FONT.mono,
+            fontFamily: FONT.base,
             fontSize:   "clamp(3.5rem, 20vw, 6rem)",
             letterSpacing: "0.06em",
             color:      isRecording ? color : COLOR.secondary,
@@ -298,7 +292,7 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
           }}>
             {fmt(elapsed)}
           </span>
-          <span style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: "0.3em", color, opacity: 0.3, textTransform: "uppercase", display: "block", marginTop: 6 }}>
+          <span style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.caps, color, opacity: OPACITY.tertiary, textTransform: "uppercase", display: "block", marginTop: 6 }}>
             {MAX_DURATION - elapsed}s remaining
           </span>
         </div>
@@ -342,7 +336,7 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
           </div>
 
           {/* Label under button */}
-          <span style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: "0.3em", color, opacity: 0.4, textTransform: "uppercase" }}>
+          <span style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.caps, color, opacity: OPACITY.tertiary, textTransform: "uppercase" }}>
             {isRecording ? (language === "he" ? "הקש לעצור" : language === "ar" ? "اضغط للإيقاف" : "TAP TO STOP") : (language === "he" ? "הקש להתחיל" : language === "ar" ? "اضغط للبدء" : "TAP TO BEGIN")}
           </span>
         </div>

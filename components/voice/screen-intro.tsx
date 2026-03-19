@@ -1,18 +1,12 @@
 "use client"
 
 import { translations, type Language } from "@/lib/i18n"
-import { DSShell, DSTopBar, DSButton, DSBack, SignalBar, DSDivider, COLOR, FONT } from "./ds"
+import { DSShell, DSTopBar, DSButton, DSBack, SignalBar, DSDivider, COLOR, FONT, LANG_COLOR, TYPE, TRACK, OPACITY } from "./ds"
 
 interface ScreenIntroProps {
   language:  Language
   onStart:   () => void
   onArchive: () => void
-}
-
-const LANG_COLOR: Record<Language, string> = {
-  en: "#c8a048",
-  he: "#c07848",
-  ar: "#50b09a",
 }
 
 const LANG_FONT: Record<Language, string> = {
@@ -77,7 +71,7 @@ export function ScreenIntro({ language, onStart, onArchive }: ScreenIntroProps) 
       <DSTopBar
         left={<SignalBar color={color} />}
         right={
-          <span style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.2em", color, opacity: 0.45 }}>
+          <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: OPACITY.primary }}>
             VESSEL · INTERIOR
           </span>
         }
@@ -112,9 +106,9 @@ export function ScreenIntro({ language, onStart, onArchive }: ScreenIntroProps) 
 
           {/* Label */}
           <span style={{
-            fontFamily: FONT.mono, fontSize: 10,
-            letterSpacing: "0.3em", textTransform: "uppercase",
-            color, opacity: 0.4, display: "block",
+            fontFamily: FONT.base, fontSize: TYPE.hud,
+            letterSpacing: TRACK.caps, textTransform: "uppercase",
+            color, opacity: OPACITY.tertiary, display: "block",
             textAlign: dir === "rtl" ? "right" : "left",
           }}>
             {content.label}
