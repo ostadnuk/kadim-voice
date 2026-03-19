@@ -217,10 +217,6 @@ export function DSShell({
       style={{ background: COLOR.bg, color: COLOR.text, fontFamily: FONT.base }}
       dir={dir}
     >
-      <GradientBg />
-      <div className="ds-grain" />
-      <div className="ds-scanlines" />
-      <LangSwitcher />
       {children}
     </div>
   )
