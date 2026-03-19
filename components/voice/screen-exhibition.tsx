@@ -262,8 +262,6 @@ export function ScreenExhibition({ language, onContinue }: ScreenExhibitionProps
 
   return (
     <DSShell dir={dir}>
-      <StarField />
-      <WaveformBg color={color} />
 
       {/* Inner vessel glow */}
       <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",

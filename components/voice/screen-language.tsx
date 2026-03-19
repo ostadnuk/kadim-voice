@@ -100,7 +100,6 @@ export function ScreenLanguage({ onSelect }: ScreenLanguageProps) {
       className="relative flex min-h-[100dvh] flex-col items-center justify-center"
       style={{ background: COLOR.bg }}
     >
-      <div className="ds-scanlines" />
 
       <div
         className="relative z-10 flex flex-col items-center w-full max-w-xs select-none"

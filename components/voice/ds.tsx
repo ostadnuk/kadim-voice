@@ -18,7 +18,7 @@ export const EASE = "cubic-bezier(0.625, 0.05, 0, 1)"
 
 export const COLOR = {
   // Background
-  bg:        "#14111a",   // deep dark — slightly lifted from pure black for eye comfort
+  bg:        "#000000",   // pure black
 
   // Accent — monochrome
   amber:     "#f0ece4",

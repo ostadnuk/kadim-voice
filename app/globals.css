@@ -39,7 +39,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    background: #14111a;
+    background: #000000;
     color: #f0ece4;
     font-family: "narkiss-yair-variable", sans-serif;
     -webkit-font-smoothing: antialiased;
