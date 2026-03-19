@@ -13,9 +13,12 @@ import type { Language } from "@/lib/i18n"
 
 // ─── COLOR ────────────────────────────────────────────────────────────────────
 
+/** Shared premium easing — snappy start, smooth deceleration (from Utopia Tokyo) */
+export const EASE = "cubic-bezier(0.625, 0.05, 0, 1)"
+
 export const COLOR = {
   // Background
-  bg:        "#0d0b0e",   // near-black
+  bg:        "#14111a",   // deep dark — slightly lifted from pure black for eye comfort
 
   // Brand accents (for large text, buttons, decorative)
   amber:     "#C36981",   // EN — dusty rose
@@ -345,7 +348,7 @@ export function DSButton({
         gap:            8,
         fontWeight:     700,
         cursor:         disabled ? "not-allowed" : "pointer",
-        transition:     "background 0.2s ease, opacity 0.2s ease",
+        transition:     `background 0.35s ${EASE}, opacity 0.35s ${EASE}`,
         WebkitTapHighlightColor: "transparent",
         opacity:        disabled ? 0.55 : 1,
       }}
@@ -469,7 +472,7 @@ export function DSInput({ id, label, value, onChange, placeholder, type = "text"
           color: COLOR.text, fontFamily: FONT.base,
           fontSize: TYPE.base, letterSpacing: TRACK.en,
           padding: "0 2px", outline: "none",
-          transition: "border-color 0.2s ease",
+          transition: `border-color 0.35s ${EASE}`,
         }}
       />
     </div>
@@ -505,7 +508,7 @@ export function DSSelect({ id, label, value, onChange, options }: {
           fontFamily: FONT.base, fontSize: TYPE.base, letterSpacing: TRACK.en,
           padding: "0 2px", outline: "none",
           appearance: "none", WebkitAppearance: "none",
-          cursor: "pointer", transition: "border-color 0.2s ease",
+          cursor: "pointer", transition: `border-color 0.35s ${EASE}`,
         }}
       >
         {options.map((o) => (
@@ -536,7 +539,7 @@ export function DSCheckbox({ checked, onChange, children }: {
           background: "transparent",
           display: "flex", alignItems: "center", justifyContent: "center",
           cursor: "pointer", marginTop: 1, padding: 0,
-          transition: "border-color 0.2s ease",
+          transition: `border-color 0.35s ${EASE}`,
         }}
       >
         {checked && (
@@ -549,7 +552,7 @@ export function DSCheckbox({ checked, onChange, children }: {
         fontFamily: FONT.base, fontSize: TYPE.sm, lineHeight: 1.7,
         color: checked ? COLOR.text : COLOR.secondary,
         letterSpacing: TRACK.en,
-        transition: "color 0.2s ease",
+        transition: `color 0.35s ${EASE}`,
       }}>
         {children}
       </span>

@@ -289,13 +289,13 @@ export function ScreenExhibition({ language, onContinue }: ScreenExhibitionProps
       </div>
 
       {/* Story */}
-      <div className="relative flex flex-1 flex-col overflow-y-auto px-5" style={{ zIndex: 6, paddingTop: "clamp(1.5rem, 6vw, 2.5rem)" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "clamp(1rem, 4vw, 1.5rem)" }}>
+      <div className="relative flex flex-1 flex-col overflow-y-auto px-5" style={{ zIndex: 6, paddingTop: "clamp(2rem, 7vw, 3.5rem)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "clamp(1.5rem, 5vw, 2.5rem)" }}>
 
           {story.frames.map((frame, i) => {
             const visible = i < revealed
             return (
-              <div key={i} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.7s ease, transform 0.7s ease" }}>
+              <div key={i} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(12px)", transition: `opacity 0.7s cubic-bezier(0.625,0.05,0,1), transform 0.7s cubic-bezier(0.625,0.05,0,1)` }}>
                 {frame.type === "hud" && (
                   <div style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.wide, textTransform: "uppercase", color, opacity: OPACITY.tertiary, padding: "2px 0" }}>
                     {frame.text}

@@ -117,7 +117,7 @@ export function ScreenIntro({ language, onStart, onArchive }: ScreenIntroProps) 
           <DSDivider color={color} opacity={0.12} />
 
           {/* Three lines — what / why / why now */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "clamp(0.9rem, 3.5vw, 1.25rem)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "clamp(1.5rem, 5vw, 2rem)" }}>
             {content.lines.map((line, i) => (
               <p key={i} style={{
                 fontFamily:    font,

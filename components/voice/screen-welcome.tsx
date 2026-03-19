@@ -163,7 +163,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
         {/* TOP ROW — corner info */}
         <div className="ds-safe-top flex items-start justify-between px-4">
           {/* top-left: signal */}
-          <div style={{ transition: "color .6s" }}>
+          <div style={{ transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)' }}>
             <SignalBar color={current.color} />
           </div>
           {/* top-right: lang selector — tap to lock */}
@@ -216,7 +216,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
             <span style={{
               fontFamily: FONT.base, fontSize: TYPE.xs,
               letterSpacing: TRACK.caps, textTransform: "uppercase",
-              color: current.color, opacity: OPACITY.secondary, transition: "color .6s",
+              color: current.color, opacity: OPACITY.secondary, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)',
             }}>
               — WELCOME TO —
             </span>
@@ -251,7 +251,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
                 letterSpacing: "0.06em",
                 color: "#fff",
                 textShadow: `0 0 8px rgba(255,255,255,0.9), 0 0 20px ${current.glow}, 0 0 60px ${current.glow}, 0 0 120px ${current.glow.replace(".55","0.25")}`,
-                transition: "text-shadow .6s",
+                transition: 'text-shadow 0.6s cubic-bezier(0.625,0.05,0,1)',
                 whiteSpace: "nowrap",
                 display: "block",
               }}>
@@ -260,7 +260,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
             </div>
 
             {/* divider line */}
-            <div style={{ width: "100%", height: 1, background: current.color, opacity: 0.25, transition: "background .6s" }} />
+            <div style={{ width: "100%", height: 1, background: current.color, opacity: 0.25, transition: 'background 0.6s cubic-bezier(0.625,0.05,0,1)' }} />
 
             {/* subtitle */}
             <span style={{
@@ -269,7 +269,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
               letterSpacing: TRACK.caps, textTransform: "uppercase",
               color: COLOR.text, opacity: OPACITY.primary,
               textShadow: `0 0 12px ${current.glow}`,
-              transition: "text-shadow .6s",
+              transition: 'text-shadow 0.6s cubic-bezier(0.625,0.05,0,1)',
             }}>
               {subDisplay}
             </span>
@@ -287,7 +287,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
             <span style={{
               fontFamily: FONT.base, fontSize: TYPE.hud,
               letterSpacing: TRACK.sm, color: current.color,
-              opacity: OPACITY.tertiary, transition: "color .6s",
+              opacity: OPACITY.tertiary, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)',
             }}>
               drag to explore
             </span>
@@ -307,7 +307,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
               padding: "0 24px",
               minHeight: 56,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              transition: "background .6s",
+              transition: 'background 0.6s cubic-bezier(0.625,0.05,0,1)',
               WebkitTapHighlightColor: "transparent",
               fontWeight: current.weight,
               direction: current.dir as "ltr" | "rtl",
@@ -336,7 +336,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
 function BracketEdge({ color, position }: { color: string; position: "top" | "bottom" }) {
   const isTop = position === "top"
   return (
-    <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, transition: "color .6s" }}>
+    <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)' }}>
       {/* left bracket arm */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 0 }}>
         {isTop
@@ -367,7 +367,7 @@ function SignalBar({ color }: { color: string }) {
     return () => clearInterval(id)
   }, [])
   return (
-    <div style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: OPACITY.secondary, transition: "color .6s" }}>
+    <div style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: OPACITY.secondary, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)' }}>
       SIG [{("█".repeat(sig) + "░".repeat(10 - sig))}]
     </div>
   )
@@ -390,7 +390,7 @@ function CoordsTicker({ color }: { color: string }) {
     <div style={{
       fontFamily: FONT.base, fontSize: TYPE.hud,
       letterSpacing: TRACK.sm, color, opacity: OPACITY.tertiary,
-      lineHeight: 1.8, transition: "color .6s",
+      lineHeight: 1.8, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)',
     }}>
       <div>TX {vals.a}</div>
       <div>RX {vals.b}</div>
