@@ -92,9 +92,9 @@ export function ScreenIntent({ language, prompt, onRecord, onSkip }: ScreenInten
 
           {/* Sub */}
           <p style={{
-            fontFamily:    FONT.mono, fontSize: "clamp(11px, 3vw, 12px)",
-            lineHeight:    1.7, letterSpacing: "0.06em",
-            color:         COLOR.text, opacity: 0.38,
+            fontFamily:    FONT.base, fontSize: TYPE.xs,
+            lineHeight:    1.75, letterSpacing: TRACK.sm,
+            color:         COLOR.text, opacity: OPACITY.secondary,
             margin:        0,
             textAlign:     dir === "rtl" ? "right" : "left",
           }}>

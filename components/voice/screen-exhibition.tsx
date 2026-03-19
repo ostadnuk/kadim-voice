@@ -302,7 +302,7 @@ export function ScreenExhibition({ language, onContinue }: ScreenExhibitionProps
                   </div>
                 )}
                 {frame.type === "voice" && (
-                  <p style={{ fontFamily: font, fontWeight: 400, fontSize: "clamp(15px, 4.2vw, 18px)", lineHeight: 1.75, color: COLOR.text, opacity: 0.82, margin: 0, letterSpacing: language === "en" ? "0.01em" : "0", textAlign: dir === "rtl" ? "right" : "left" }}>
+                  <p style={{ fontFamily: font, fontWeight: 400, fontSize: TYPE.base, lineHeight: 1.8, color: COLOR.text, opacity: OPACITY.primary, margin: 0, letterSpacing: language === "en" ? TRACK.en : TRACK.body, textAlign: dir === "rtl" ? "right" : "left" }}>
                     {frame.text}
                   </p>
                 )}

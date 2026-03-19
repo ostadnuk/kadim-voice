@@ -122,12 +122,10 @@ export function ScreenIntro({ language, onStart, onArchive }: ScreenIntroProps) 
               <p key={i} style={{
                 fontFamily:    font,
                 fontWeight:    i === 2 ? (language === "en" ? 700 : 600) : 400,
-                fontSize:      i === 2
-                  ? "clamp(1rem, 5vw, 1.2rem)"
-                  : "clamp(13px, 3.8vw, 16px)",
-                lineHeight:    1.65,
+                fontSize:      i === 2 ? TYPE.lg : TYPE.base,
+                lineHeight:    1.75,
                 color:         i === 2 ? color : COLOR.text,
-                opacity:       i === 0 ? 0.6 : i === 1 ? 0.72 : 0.92,
+                opacity:       i === 0 ? OPACITY.secondary : i === 1 ? OPACITY.primary : OPACITY.full,
                 margin:        0,
                 letterSpacing: language === "en" ? "0.01em" : "0",
                 textAlign:     dir === "rtl" ? "right" : "left",

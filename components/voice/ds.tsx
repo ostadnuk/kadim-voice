@@ -60,12 +60,12 @@ export const FONT = {
  * Minimum values are the floor on a 320px phone.
  */
 export const TYPE = {
-  hud:  "clamp(11px, 2.8vw, 12px)",   // tiny status / coords (minimum usage only)
-  xs:   "clamp(12px, 3vw,  13px)",    // secondary labels, captions
-  sm:   "clamp(13px, 3.5vw, 14px)",   // buttons, tags, HUD labels
-  base: "clamp(15px, 4vw,  17px)",    // body text
-  lg:   "clamp(17px, 4.8vw, 20px)",   // lead text / emphasis
-  xl:   "clamp(1.25rem, 6.5vw, 1.8rem)", // section headings
+  hud:  "clamp(12px, 3vw,  13px)",    // tiny status / coords (minimum usage only)
+  xs:   "clamp(13px, 3.5vw, 15px)",   // secondary labels, captions
+  sm:   "clamp(15px, 4vw,  16px)",    // buttons, tags, HUD labels
+  base: "clamp(17px, 4.5vw, 20px)",   // body text
+  lg:   "clamp(20px, 5.5vw, 24px)",   // lead text / emphasis
+  xl:   "clamp(1.5rem, 7vw, 2.2rem)", // section headings
   disp: "clamp(3.5rem, 20vw, 8rem)",  // hero / title display
 } as const
 
