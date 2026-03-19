@@ -40,7 +40,7 @@ export function ScreenLocation({ language, venueId, venueName, onContinue, onBac
             <DSBlock>
               <div className="flex flex-col items-center gap-3 text-center">
                 <DSLabel spacing="0.4em" opacity={0.65}>{t.collectedAt}</DSLabel>
-                <p style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: "clamp(1.4rem, 8vw, 2.2rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT, textShadow: `0 0 30px rgba(200,160,72,0.4)` }}>{venueName}</p>
+                <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: "clamp(1.4rem, 8vw, 2.2rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT, textShadow: `0 0 30px rgba(200,160,72,0.4)` }}>{venueName}</p>
                 <DSDivider />
                 <DSLabel opacity={0.45}>{t.venueConfirmed}</DSLabel>
               </div>
@@ -74,7 +74,7 @@ export function ScreenLocation({ language, venueId, venueName, onContinue, onBac
         <div className="flex w-full max-w-sm flex-col gap-8">
           <div className="flex flex-col items-center gap-1 text-center">
             <DSLabel spacing="0.4em" opacity={0.65}>{t.heading}</DSLabel>
-            <p style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: "clamp(1.2rem, 7vw, 1.8rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT }}>{t.title}</p>
+            <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: "clamp(1.2rem, 7vw, 1.8rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT }}>{t.title}</p>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>

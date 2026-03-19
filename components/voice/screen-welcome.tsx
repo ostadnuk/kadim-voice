@@ -10,9 +10,9 @@ interface ScreenWelcomeProps {
 }
 
 const TITLES: { lang: Language; title: string; sub: string; cta: string; dir: string; color: string; glow: string; font: string; weight: number }[] = [
-  { lang: "en", title: "KADIM", sub: "VOICE SIGNATURES ARCHIVE", cta: "ENTER ARCHIVE",    dir: "ltr", color: "#C36981", glow: "rgba(195,105,129,0.55)", font: "'narkiss-yair-variable'", weight: 900 },
+  { lang: "en", title: "KADIM", sub: "VOICE SIGNATURES ARCHIVE", cta: "ENTER ARCHIVE",    dir: "ltr", color: "#C36981", glow: "rgba(195,105,129,0.55)", font: "'narkiss-yair-variable'", weight: 700 },
   { lang: "he", title: "קדים",  sub: "ארכיון חתימות קול",         cta: "כניסה לארכיון",  dir: "rtl", color: "#A53D1E", glow: "rgba(165,61,30,0.55)",   font: "'narkiss-yair-variable'",  weight: 700 },
-  { lang: "ar", title: "قديم",  sub: "أرشيف توقيعات الصوت",       cta: "ادخل الأرشيف",   dir: "rtl", color: "#324238", glow: "rgba(50,66,56,0.55)",    font: "'narkiss-yair-variable'",  weight: 900 },
+  { lang: "ar", title: "قديم",  sub: "أرشيف توقيعات الصوت",       cta: "ادخل الأرشيف",   dir: "rtl", color: "#324238", glow: "rgba(50,66,56,0.55)",    font: "'narkiss-yair-variable'",  weight: 700 },
 ]
 
 const SCRAMBLE_CHARS = "░▒▓▄▀◆◇▪□▸⊗⊕01!><∷⋯"

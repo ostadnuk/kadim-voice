@@ -153,7 +153,7 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
         <div style={{ borderBottom: `1px solid ${COLOR.veryDim}`, paddingBottom: 16, marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
             <div>
-              <h1 style={{ fontFamily: font, fontWeight: 900, fontSize: "clamp(1.3rem, 7vw, 2rem)", letterSpacing: "0.04em", color, lineHeight: 1 }}>
+              <h1 style={{ fontFamily: font, fontWeight: 700, fontSize: "clamp(1.3rem, 7vw, 2rem)", letterSpacing: "0.04em", color, lineHeight: 1 }}>
                 {t.title}
               </h1>
               <p style={{ fontFamily: FONT.mono, fontSize: 11, letterSpacing: "0.15em", color, opacity: 0.5, marginTop: 4 }}>

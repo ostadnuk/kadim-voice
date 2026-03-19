@@ -32,7 +32,7 @@ export function ScreenConsent({ language, onContinue, onBack }: ScreenConsentPro
           <DSBlock>
             <div className="flex flex-col items-center gap-2 text-center">
               <DSLabel spacing="0.4em" opacity={0.65}>{t.heading}</DSLabel>
-              <p style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: "clamp(1.4rem, 8vw, 2rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT }}>{t.title}</p>
+              <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: "clamp(1.4rem, 8vw, 2rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT }}>{t.title}</p>
             </div>
           </DSBlock>
 
@@ -57,7 +57,7 @@ export function ScreenConsent({ language, onContinue, onBack }: ScreenConsentPro
       <Dialog open={privacyOpen} onOpenChange={setPrivacyOpen}>
         <DialogContent style={{ background: COLOR.bg, border: `1px solid ${COLOR.veryDim}`, borderRadius: 0, color: COLOR.text, fontFamily: FONT.mono }} dir={dir}>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: "1.1rem", letterSpacing: "0.06em", textTransform: "uppercase", color: ACCENT }}>{t.privacyTitle}</DialogTitle>
+            <DialogTitle style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: "1.1rem", letterSpacing: "0.06em", textTransform: "uppercase", color: ACCENT }}>{t.privacyTitle}</DialogTitle>
             <DialogDescription style={{ fontSize: 12, lineHeight: 1.75, color: COLOR.secondary, letterSpacing: "0.04em" }}>{t.privacyBody}</DialogDescription>
           </DialogHeader>
         </DialogContent>

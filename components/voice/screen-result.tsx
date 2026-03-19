@@ -39,7 +39,7 @@ export function ScreenResult({ language, recording, location, signaturePoints, t
           <DSBlock>
             <div className="flex flex-col items-center gap-2 text-center">
               <DSLabel spacing="0.4em" opacity={0.65}>{t.heading}</DSLabel>
-              <p style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: "clamp(1.4rem, 8vw, 2rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT, textShadow: `0 0 30px rgba(200,160,72,0.45)`, whiteSpace: "pre-line" }}>{t.title}</p>
+              <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: "clamp(1.4rem, 8vw, 2rem)", letterSpacing: "0.04em", textTransform: "uppercase", color: ACCENT, textShadow: `0 0 30px rgba(200,160,72,0.45)`, whiteSpace: "pre-line" }}>{t.title}</p>
             </div>
           </DSBlock>
 

@@ -18,9 +18,9 @@ const ENTRIES: {
   ch:      string
   freq:    string
 }[] = [
-  { code: "en", text: "ENTER",  font: "'narkiss-yair-variable', sans-serif",         weight: 900, color: "#C36981", dir: "ltr", ch: "CH·01", freq: "440.00" },
+  { code: "en", text: "ENTER",  font: "'narkiss-yair-variable', sans-serif",         weight: 700, color: "#C36981", dir: "ltr", ch: "CH·01", freq: "440.00" },
   { code: "he", text: "כניסה",  font: "'narkiss-yair-variable', sans-serif",     weight: 700, color: "#A53D1E", dir: "rtl", ch: "CH·02", freq: "528.00" },
-  { code: "ar", text: "ادخل",   font: "'narkiss-yair-variable', sans-serif",           weight: 900, color: "#324238", dir: "rtl", ch: "CH·03", freq: "639.00" },
+  { code: "ar", text: "ادخل",   font: "'narkiss-yair-variable', sans-serif",           weight: 700, color: "#324238", dir: "rtl", ch: "CH·03", freq: "639.00" },
 ]
 
 const BAR_COUNT = 9
