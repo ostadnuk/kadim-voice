@@ -63,6 +63,7 @@ export function ScreenLocation({ language, venueId, venueName, onContinue, onBac
   const copy = COPY[language]
 
   const [geoState, setGeoState] = useState<"idle" | "locating" | "done" | "failed" | "manual">("idle")
+  const [manualStep, setManualStep] = useState<"country" | "city">("country")
   const ctaRef = useRef<HTMLDivElement>(null)
 
   // Hide before first paint — keeps opacity out of JSX so React never re-applies it
@@ -174,36 +175,44 @@ export function ScreenLocation({ language, venueId, venueName, onContinue, onBac
         style={{ paddingTop: 6, transition: "opacity 0.9s ease" }}>
 
         {geoState === "manual" ? (
-          /* Manual country/city form — scrollable so it never pushes into the sphere */
-          <div style={{
-            maxHeight: "42dvh",
-            overflowY: "auto",
-            display: "flex", flexDirection: "column", gap: 8,
-            WebkitOverflowScrolling: "touch",
-          }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <DSSelect
-                id="country" label={language === "he" ? "מדינה" : language === "ar" ? "الدولة" : "Country"}
-                value={country} onChange={setCountry}
-                options={COUNTRIES.map(c => ({ value: c, label: c || (language === "he" ? "בחירת מדינה" : language === "ar" ? "اختر الدولة" : "Select country") }))}
-              />
-              <DSInput
-                id="city" label={language === "he" ? "עיר" : language === "ar" ? "المدينة" : "City"}
-                value={city} onChange={setCity}
-                placeholder={language === "he" ? "שם העיר" : language === "ar" ? "اسم المدينة" : "City name"}
-              />
-            </div>
-            <span style={{ fontFamily: FONT.base, fontSize: "0.65rem", letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.7, textAlign: dir === "rtl" ? "right" : "left", display: "block" }}>
-              {copy.privacy}
-            </span>
-            <div style={{ display: "flex", justifyContent: dir === "rtl" ? "flex-start" : "flex-end" }}>
-              <DSBack onClick={() => onContinue({ sourceType: "remote", venueId: null, venueName: null, country: "", city: "", lat: null, lng: null })}>
-                {language === "he" ? "דילוג על מיקום" : language === "ar" ? "تخطّ الموقع" : "Skip location"}
-              </DSBack>
-            </div>
-            <DSButton onClick={() => onContinue({ sourceType: "remote", venueId: null, venueName: null, country, city, lat: null, lng: null })} color={COLOR.text}>
-              {language === "he" ? "המשך" : language === "ar" ? "متابعة" : "CONTINUE"}
-            </DSButton>
+          /* Manual entry — one field at a time so sphere stays clear */
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {manualStep === "country" ? (
+              <>
+                <DSSelect
+                  id="country" label={language === "he" ? "מדינה" : language === "ar" ? "الدولة" : "Country"}
+                  value={country} onChange={setCountry}
+                  options={COUNTRIES.map(c => ({ value: c, label: c || (language === "he" ? "בחירת מדינה" : language === "ar" ? "اختر الدولة" : "Select country") }))}
+                />
+                <div style={{ display: "flex", justifyContent: dir === "rtl" ? "flex-start" : "flex-end" }}>
+                  <DSBack onClick={() => onContinue({ sourceType: "remote", venueId: null, venueName: null, country: "", city: "", lat: null, lng: null })}>
+                    {language === "he" ? "דילוג על מיקום" : language === "ar" ? "تخطّ الموقع" : "Skip location"}
+                  </DSBack>
+                </div>
+                <DSButton onClick={() => setManualStep("city")} color={COLOR.text}>
+                  {language === "he" ? "המשך" : language === "ar" ? "التالي" : "NEXT"}
+                </DSButton>
+              </>
+            ) : (
+              <>
+                <DSInput
+                  id="city" label={language === "he" ? "עיר" : language === "ar" ? "المدينة" : "City"}
+                  value={city} onChange={setCity}
+                  placeholder={language === "he" ? "שם העיר" : language === "ar" ? "اسم المدينة" : "City name"}
+                />
+                <span style={{ fontFamily: FONT.base, fontSize: "0.65rem", letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.7, textAlign: dir === "rtl" ? "right" : "left", display: "block" }}>
+                  {copy.privacy}
+                </span>
+                <div style={{ display: "flex", justifyContent: dir === "rtl" ? "flex-start" : "flex-end" }}>
+                  <DSBack onClick={() => setManualStep("country")}>
+                    {language === "he" ? "← חזרה" : language === "ar" ? "← رجوع" : "← back"}
+                  </DSBack>
+                </div>
+                <DSButton onClick={() => onContinue({ sourceType: "remote", venueId: null, venueName: null, country, city, lat: null, lng: null })} color={COLOR.text}>
+                  {language === "he" ? "המשך" : language === "ar" ? "متابعة" : "CONTINUE"}
+                </DSButton>
+              </>
+            )}
           </div>
         ) : (
           /* GPS default */
