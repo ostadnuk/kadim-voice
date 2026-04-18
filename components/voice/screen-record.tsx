@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect, useLayoutEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from "react" // useCallback kept for stopAll
 import type { RecordingState } from "@/lib/types"
 import type { Language } from "@/lib/i18n"
 import { DSShell, DSTopBar, AltSigTicker, InteriorBg, COLOR, FONT, TYPE, TRACK, OPACITY, DSButton, DSBack } from "./ds"
@@ -52,22 +52,22 @@ const COPY: Record<Language, {
   },
 }
 
+// Text the user reads aloud during recording — appears at reading pace
 const INSTR: Record<Language, string[]> = {
   en: [
-    "I am here. My voice is here.",
-    "No other voice can say these words this way.",
-    "I carry what only I can carry.",
-    "I leave what only I can leave.",
+    "I was here.",
+    "My voice was here.",
+    "No other voice can say it this way.",
   ],
   he: [
-    "אני כאן. קולי כאן.",
-    "שום קול אחר לא יכול לומר את המילים האלה כך.",
-    "אני נושא מה שרק אני יכול לשאת.",
-    "אני משאיר מה שרק אני יכול להשאיר.",
+    "הייתי כאן.",
+    "קולי היה כאן.",
+    "שום קול אחר לא יכול לומר את זה כך.",
   ],
   ar: [
-    "أنا هنا. صوتي هنا.",
-    "لا صوت آخر يستطيع قول هذه الكلمات بهذه الطريقة.",
+    "كنت هنا.",
+    "صوتي كان هنا.",
+    "لا صوت آخر يستطيع قوله بهذه الطريقة.",
     "أحمل ما لا يستطيع حمله سواي.",
     "أترك ما لا يستطيع تركه سواي.",
   ],
@@ -150,9 +150,11 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
   type PermState = "idle" | "requesting" | "granted" | "denied"
   const [permState,     setPermState]     = useState<PermState>("idle")
   const micBtnRef = useRef<HTMLDivElement>(null)
-  const [instrLines,    setInstrLines]    = useState<string[]>([])
   const [showRecordBtn, setShowRecordBtn] = useState(false)
   const [isRecording,   setIsRecording]   = useState(false)
+  // Reading text — only visible during recording, typed at reading pace
+  const [readingLine,   setReadingLine]   = useState(-1)
+  const [readingChars,  setReadingChars]  = useState(0)
   const [elapsed,       setElapsed]       = useState(0)
   const [analyser,      setAnalyser]      = useState<AnalyserNode | null>(null)
   const [freqs,         setFreqs]         = useState({ bassHz: 0, midHz: 0, highHz: 0 })
@@ -163,10 +165,6 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
   const timerRef         = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioContextRef  = useRef<AudioContext | null>(null)
   const startTimeRef     = useRef<number>(0)
-
-  const resolveRef = useRef<(() => void) | null>(null)
-  const notifyDone = useCallback(() => { resolveRef.current?.(); resolveRef.current = null }, [])
-  function waitTyping() { return new Promise<void>(r => { resolveRef.current = r }) }
 
   const stopAll = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -193,24 +191,40 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
     }
   }, [permState])
 
+  // Show record button shortly after permission granted
   useEffect(() => {
     if (permState !== "granted") return
-    let cancelled = false
-    const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
-    async function run() {
-      for (const line of INSTR[language]) {
-        if (cancelled) return
-        setInstrLines(prev => [...prev, line])
-        await waitTyping()
-        if (cancelled) return
-        await sleep(500)
-      }
-      if (!cancelled) setShowRecordBtn(true)
-    }
-    run()
-    return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const t = setTimeout(() => setShowRecordBtn(true), 500)
+    return () => clearTimeout(t)
   }, [permState])
+
+  // Reading sequence: starts when recording begins, types each line at reading pace
+  useEffect(() => {
+    if (!isRecording) {
+      setReadingLine(-1)
+      setReadingChars(0)
+      return
+    }
+    const lines = INSTR[language]
+    const timers: ReturnType<typeof setTimeout>[] = []
+    let cancelled = false
+
+    function typeChar(lineIdx: number, charIdx: number) {
+      if (cancelled || lineIdx >= lines.length) return
+      if (charIdx === 0) { setReadingLine(lineIdx); setReadingChars(0) }
+      if (charIdx < lines[lineIdx].length) {
+        setReadingChars(charIdx + 1)
+        timers.push(setTimeout(() => typeChar(lineIdx, charIdx + 1), 72))
+      } else {
+        // Line complete — pause then start next
+        timers.push(setTimeout(() => typeChar(lineIdx + 1, 0), 1100))
+      }
+    }
+
+    timers.push(setTimeout(() => typeChar(0, 0), 600))
+    return () => { cancelled = true; timers.forEach(clearTimeout) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRecording, language])
 
   const requestPermission = async () => {
     setPermState("requesting")
@@ -319,20 +333,21 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
         </div>
       </div>
 
-      {/* ── BOTTOM TEXT — all states share this zone ── */}
+      {/* ── Permission / blocked text — bottom anchored, fades out after grant ── */}
       <div style={{
         position: "fixed", bottom: "clamp(9rem, 22vw, 12rem)",
         left: 0, right: 0, zIndex: 6,
         paddingLeft: "clamp(1.25rem, 6vw, 2.5rem)",
         paddingRight: "clamp(1.25rem, 6vw, 2.5rem)",
+        opacity: permState === "granted" ? 0 : 1,
+        transition: "opacity 0.5s ease",
+        pointerEvents: permState === "granted" ? "none" : "auto",
       }}>
-
         {/* Mic permission text */}
         <div style={{
           opacity: permState === "idle" || permState === "requesting" ? 1 : 0,
           transition: "opacity 0.5s ease",
-          pointerEvents: permState === "idle" || permState === "requesting" ? "auto" : "none",
-          position: permState === "granted" || permState === "denied" ? "absolute" : "relative",
+          position: permState === "denied" ? "absolute" : "relative",
         }}>
           <p style={{ fontFamily: FONT.base, fontWeight: 400, fontSize: TYPE.lg, lineHeight: 1.65, color: COLOR.text, opacity: OPACITY.primary, margin: 0, direction: dir, textAlign: dir === "rtl" ? "right" : "left" }}>
             <TypeLine text={copy.micTitle} speed={18} onDone={() => {
@@ -341,41 +356,51 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
             }} />
           </p>
         </div>
-
         {/* Blocked text */}
         <div style={{
           opacity: permState === "denied" ? 1 : 0,
           transition: "opacity 0.5s ease",
-          pointerEvents: permState === "denied" ? "auto" : "none",
           position: permState !== "denied" ? "absolute" : "relative",
         }}>
           <p style={{ fontFamily: FONT.base, fontWeight: 400, fontSize: TYPE.lg, lineHeight: 1.65, color: COLOR.error ?? "#e57373", opacity: OPACITY.primary, margin: 0, direction: dir, textAlign: dir === "rtl" ? "right" : "left" }}>
             {copy.blockedTitle}
           </p>
         </div>
+      </div>
 
-        {/* Mantra lines (after granted — stays visible during recording) */}
-        <div style={{
-          opacity: permState === "granted" ? 1 : 0,
-          transition: "opacity 0.5s ease",
-          display: "flex", flexDirection: "column",
-          gap: "clamp(0.5rem, 1.5vw, 0.75rem)",
-        }}>
-          {instrLines.map((line, i, arr) => (
+      {/* ── Reading text — appears ONLY during recording, anchored BELOW sphere ── */}
+      <div style={{
+        position: "fixed",
+        // Sphere center: ~(100vh - 20vh)/2 = 40vh from top. Sphere half = min(41vw,23vh). Start below it.
+        top: "calc(40vh + min(41vw, 23vh) + 2rem)",
+        left: 0, right: 0,
+        zIndex: 6, pointerEvents: "none",
+        paddingLeft: "clamp(1.25rem, 6vw, 2.5rem)",
+        paddingRight: "clamp(1.25rem, 6vw, 2.5rem)",
+        display: "flex", flexDirection: "column",
+        gap: "clamp(0.6rem, 2vw, 1rem)",
+      }}>
+        {INSTR[language].map((line, i) => {
+          const isActive  = i === readingLine
+          const isDone    = i < readingLine
+          if (!isActive && !isDone) return null
+          return (
             <p key={i} style={{
-              fontFamily: FONT.base, fontWeight: 400, fontSize: TYPE.lg, lineHeight: 1.65,
+              fontFamily: FONT.base, fontWeight: isDone ? 400 : 500,
+              fontSize: TYPE.lg, lineHeight: 1.55,
               color: COLOR.text,
-              opacity: i === arr.length - 1 ? OPACITY.primary : 0.28,
-              margin: 0,
-              letterSpacing: language === "en" ? TRACK.en : TRACK.body,
+              opacity: isDone ? 0.28 : OPACITY.primary,
+              margin: 0, direction: dir,
               textAlign: dir === "rtl" ? "right" : "left",
-              transition: "opacity 1.2s ease",
+              transition: "opacity 0.8s ease",
             }}>
-              <TypeLine text={line} speed={12} onDone={notifyDone} />
+              {isDone ? line : line.slice(0, readingChars)}
+              {isActive && readingChars < line.length && (
+                <span className="ds-cursor" style={{ opacity: 0.7 }}>▌</span>
+              )}
             </p>
-          ))}
-        </div>
-
+          )
+        })}
       </div>
 
       {/* ── Permission button — own fixed div, ref-driven opacity ── */}
