@@ -120,20 +120,32 @@ function TypeLine({ text, speed, onDone, cursorOpacity = 0.6 }: {
 
 function RecordBtn({ onClick, isRecording }: { onClick: () => void; isRecording: boolean }) {
   return (
-    <button onClick={onClick} style={{
-      width: 72, height: 72, borderRadius: "50%",
-      border: `1.5px solid ${COLOR.text}`,
-      background: isRecording ? COLOR.text : "transparent",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      cursor: "pointer",
-      transition: "background 0.35s ease",
-      WebkitTapHighlightColor: "transparent",
-    }}>
-      {isRecording
-        ? <div style={{ width: 22, height: 22, background: COLOR.bg, borderRadius: 3 }} />
-        : <div style={{ width: 26, height: 26, borderRadius: "50%", background: COLOR.text }} />
-      }
-    </button>
+    <div style={{ position: "relative", width: 72, height: 72 }}>
+      {/* Pulsing ring — only visible while recording */}
+      {isRecording && (
+        <span style={{
+          position: "absolute", inset: 0, borderRadius: "50%",
+          border: `1.5px solid ${COLOR.text}`,
+          animation: "rec-ring 1.6s ease-out infinite",
+          pointerEvents: "none",
+        }} />
+      )}
+      <button onClick={onClick} style={{
+        position: "absolute", inset: 0,
+        borderRadius: "50%",
+        border: `1.5px solid ${COLOR.text}`,
+        background: isRecording ? COLOR.text : "transparent",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: "pointer",
+        transition: "background 0.35s ease",
+        WebkitTapHighlightColor: "transparent",
+      }}>
+        {isRecording
+          ? <div style={{ width: 22, height: 22, background: COLOR.bg, borderRadius: 3 }} />
+          : <div style={{ width: 26, height: 26, borderRadius: "50%", background: COLOR.text }} />
+        }
+      </button>
+    </div>
   )
 }
 
@@ -283,7 +295,12 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
   // Always "active" once granted — no mode switch on recording start/stop, no effect re-runs
   const sphereMode = permState === "denied" ? "still" : permState === "granted" ? "active" : "ready"
 
-  const STYLE = `@keyframes rec-dot { 0%,100%{opacity:1} 50%{opacity:0.2} }`
+  const STYLE = `
+    @keyframes rec-dot   { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    @keyframes rec-ring  { 0%{transform:scale(1);   opacity:0.55}
+                           70%{transform:scale(1.9); opacity:0}
+                           100%{transform:scale(1.9);opacity:0} }
+  `
 
   // ── Single render — sphere never unmounts ─────────────────────────────────
   return (
@@ -368,33 +385,34 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
         </div>
       </div>
 
-      {/* ── Reading text — appears ONLY during recording, anchored BELOW sphere ── */}
+      {/* ── Reading text — appears ONLY during recording, anchored above the button ── */}
       <div style={{
         position: "fixed",
-        // Sphere center: ~(100vh - 20vh)/2 = 40vh from top. Sphere half = min(41vw,23vh). Start below it.
-        top: "calc(40vh + min(41vw, 23vh) + 2rem)",
+        // Sit just above the record button (72px) + bottom inset + generous breathing room
+        bottom: "calc(max(1.5rem, env(safe-area-inset-bottom)) + 72px + 2.2rem)",
         left: 0, right: 0,
         zIndex: 6, pointerEvents: "none",
         paddingLeft: "clamp(1.25rem, 6vw, 2.5rem)",
         paddingRight: "clamp(1.25rem, 6vw, 2.5rem)",
         display: "flex", flexDirection: "column",
-        gap: "clamp(0.6rem, 2vw, 1rem)",
+        gap: "clamp(0.75rem, 2.5vw, 1.1rem)",
       }}>
         {INSTR[language].map((line, i) => {
           const isActive  = i === readingLine
-          const isDone    = i < readingLine
-          if (!isActive && !isDone) return null
+          // Show only the previous line (faded) and current — 2 lines max visible
+          const isPrev    = i === readingLine - 1
+          if (!isActive && !isPrev) return null
           return (
             <p key={i} style={{
-              fontFamily: FONT.base, fontWeight: isDone ? 400 : 500,
+              fontFamily: FONT.base, fontWeight: isPrev ? 400 : 500,
               fontSize: TYPE.lg, lineHeight: 1.55,
               color: COLOR.text,
-              opacity: isDone ? 0.28 : OPACITY.primary,
+              opacity: isPrev ? 0.25 : OPACITY.primary,
               margin: 0, direction: dir,
               textAlign: dir === "rtl" ? "right" : "left",
               transition: "opacity 0.8s ease",
             }}>
-              {isDone ? line : line.slice(0, readingChars)}
+              {isPrev ? line : line.slice(0, readingChars)}
               {isActive && readingChars < line.length && (
                 <span className="ds-cursor" style={{ opacity: 0.7 }}>▌</span>
               )}
