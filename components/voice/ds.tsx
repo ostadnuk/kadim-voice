@@ -117,7 +117,7 @@ function useLang() { return useContext(LanguageCtx) }
 
 // ─── STEP CONTEXT ─────────────────────────────────────────────────────────────
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 5
 interface StepCtx { step: number }
 const StepContext = createContext<StepCtx>({ step: 0 })
 
@@ -129,11 +129,12 @@ export function StepProvider({ step, children }: { step: number; children: React
 
 export function DSStepBar({ color = ACCENT }: { color?: string }) {
   const { step } = useContext(StepContext)
-  const filled = "█".repeat(step)
-  const empty  = "░".repeat(TOTAL_STEPS - step)
+  const filled = "█".repeat(Math.max(0, step))
+  const empty  = "░".repeat(Math.max(0, TOTAL_STEPS - step))
   return (
-    <div style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: OPACITY.secondary }}>
-      {String(TOTAL_STEPS).padStart(2, "0")} [{filled}{empty}] {String(step).padStart(2, "0")}
+    // Always LTR: step-number [████░░] total — progress fills left→right
+    <div style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: OPACITY.secondary, direction: "ltr" }}>
+      {String(step).padStart(2, "0")} [{filled}{empty}] {String(TOTAL_STEPS).padStart(2, "0")}
     </div>
   )
 }

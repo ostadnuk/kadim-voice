@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect, useLayoutEffect } from "react" // useCallback kept for stopAll
 import type { RecordingState } from "@/lib/types"
 import type { Language } from "@/lib/i18n"
-import { DSShell, DSTopBar, AltSigTicker, InteriorBg, COLOR, FONT, TYPE, TRACK, OPACITY, DSButton, DSBack } from "./ds"
+import { DSShell, DSTopBar, AltSigTicker, InteriorBg, COLOR, FONT, TYPE, TRACK, OPACITY, DSButton, DSBack, TypeLine } from "./ds"
 import { VoiceSphere, SPHERE_FIXED, SPHERE_SIZE } from "./voice-sphere"
 
 interface ScreenRecordProps {
@@ -35,7 +35,7 @@ const COPY: Record<Language, {
     requesting:   "מבקש...",
     blockedTitle: "המיקרופון חסום.",
     blockedBody:  "כדי לאשר את הגישה ולהמשיך להקלטה, יש ללחוץ על הכפתור.",
-    retry:        "נסיון נוסף",
+    retry:        "ניסיון נוסף",
     back:         "← חזרה",
     ready:        "הכלי מוכן",
     rec:          "קולט אות",
@@ -81,49 +81,6 @@ const INSTR: Record<Language, string[]> = {
     "أترك هنا شيئاً من نفسي.",
     "ختم فريد، محفوظ لِما سيأتي.",
   ],
-}
-
-// ── Smooth typewriter ─────────────────────────────────────────────────────────
-
-function TypeLine({ text, speed, onDone, cursorOpacity = 0.6 }: {
-  text: string; speed: number; onDone: () => void; cursorOpacity?: number
-}) {
-  const spanRef   = useRef<HTMLSpanElement>(null)
-  const cursorRef = useRef<HTMLSpanElement>(null)
-  const onDoneRef = useRef(onDone)
-  onDoneRef.current = onDone
-
-  useEffect(() => {
-    const el = spanRef.current as HTMLSpanElement | null
-    if (!el) return
-    if (!text) { onDoneRef.current(); return }
-    const node = el
-    let idx = 0, lastTime = -1, rafId: number, cancelled = false
-    function tick(time: number) {
-      if (cancelled) return
-      if (lastTime < 0 || time - lastTime >= speed) {
-        idx++
-        node.textContent = text.slice(0, idx)
-        lastTime = time
-        if (idx >= text.length) {
-          if (cursorRef.current) cursorRef.current.style.display = "none"
-          onDoneRef.current()
-          return
-        }
-      }
-      rafId = requestAnimationFrame(tick)
-    }
-    rafId = requestAnimationFrame(tick)
-    return () => { cancelled = true; cancelAnimationFrame(rafId) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  return (
-    <>
-      <span ref={spanRef} />
-      <span ref={cursorRef} className="ds-cursor" style={{ opacity: cursorOpacity }}>▌</span>
-    </>
-  )
 }
 
 // ── Record icon button ────────────────────────────────────────────────────────

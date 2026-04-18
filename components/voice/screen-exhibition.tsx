@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import type { Language } from "@/lib/i18n"
-import { DSShell, DSTopBar, DSButton, COLOR, FONT, TYPE, TRACK, OPACITY, AltSigTicker, InteriorBg } from "./ds"
+import { DSShell, DSTopBar, DSButton, COLOR, FONT, TYPE, TRACK, OPACITY, AltSigTicker, InteriorBg, TypeLine } from "./ds"
 
 interface ScreenExhibitionProps {
   language:   Language
@@ -71,52 +71,6 @@ const HUD_GLOWS  = [
   "0 0 8px rgba(217,122,150,0.7), 0 0 20px rgba(217,122,150,0.35)",
   "0 0 8px rgba(212,105,58,0.7),  0 0 20px rgba(212,105,58,0.35)",
 ]
-
-// ── Smooth typewriter — rAF-driven, no parent re-renders per character ─────────
-
-function TypeLine({ text, speed, onDone, cursorOpacity = 0.6 }: {
-  text: string; speed: number; onDone: () => void; cursorOpacity?: number
-}) {
-  const spanRef   = useRef<HTMLSpanElement>(null)
-  const cursorRef = useRef<HTMLSpanElement>(null)
-  const onDoneRef = useRef(onDone)
-  onDoneRef.current = onDone
-
-  useEffect(() => {
-    const el = spanRef.current as HTMLSpanElement | null
-    if (!el) return
-    if (!text) { onDoneRef.current(); return }
-    const node = el
-
-    let idx = 0, lastTime = -1, rafId: number, cancelled = false
-
-    function tick(time: number) {
-      if (cancelled) return
-      if (lastTime < 0 || time - lastTime >= speed) {
-        idx++
-        node.textContent = text.slice(0, idx)
-        lastTime = time
-        if (idx >= text.length) {
-          if (cursorRef.current) cursorRef.current.style.display = "none"
-          onDoneRef.current()
-          return
-        }
-      }
-      rafId = requestAnimationFrame(tick)
-    }
-
-    rafId = requestAnimationFrame(tick)
-    return () => { cancelled = true; cancelAnimationFrame(rafId) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  return (
-    <>
-      <span ref={spanRef} />
-      <span ref={cursorRef} className="ds-cursor" style={{ opacity: cursorOpacity }}>▌</span>
-    </>
-  )
-}
 
 // ── Frame state ───────────────────────────────────────────────────────────────
 
