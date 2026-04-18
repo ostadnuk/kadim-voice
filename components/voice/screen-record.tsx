@@ -378,54 +378,53 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
 
       </div>
 
-      {/* ── BOTTOM BUTTONS — all states overlay each other at fixed bottom ── */}
-      <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20,
-        paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
-        paddingLeft: "1rem", paddingRight: "1rem",
-        // Fixed height so nothing shifts — all children are absolute inside
-        height: "clamp(4.5rem, 14vw, 6rem)",
+      {/* ── Permission button — own fixed div, ref-driven opacity ── */}
+      <div ref={micBtnRef} style={{
+        position: "fixed", bottom: "max(1.5rem, env(safe-area-inset-bottom))",
+        left: "1rem", right: "1rem", zIndex: 20,
+        transition: "opacity 0.8s ease",
       }}>
+        <DSButton onClick={requestPermission} disabled={permState === "requesting"} color={COLOR.text}>
+          {permState === "requesting" ? copy.requesting : copy.allow}
+        </DSButton>
+      </div>
 
-        {/* Permission button — absolute, opacity driven by ref to avoid React re-render jank */}
-        <div ref={micBtnRef} style={{
-          position: "absolute", bottom: "max(1.5rem, env(safe-area-inset-bottom))",
-          left: "1rem", right: "1rem",
-          transition: "opacity 0.8s ease",
-        }}>
-          <DSButton onClick={requestPermission} disabled={permState === "requesting"} color={COLOR.text}>
-            {permState === "requesting" ? copy.requesting : copy.allow}
-          </DSButton>
+      {/* ── Blocked — back + retry — own fixed div, never clipped ── */}
+      <div style={{
+        position: "fixed", bottom: "max(1.5rem, env(safe-area-inset-bottom))",
+        left: "1rem", right: "1rem", zIndex: 20,
+        opacity: permState === "denied" ? 1 : 0,
+        transition: "opacity 0.5s ease",
+        pointerEvents: permState === "denied" ? "auto" : "none",
+        display: "flex", flexDirection: "column", gap: 8,
+      }}>
+        <div style={{ display: "flex", justifyContent: dir === "rtl" ? "flex-start" : "flex-end" }}>
+          <DSBack onClick={onBack}>{copy.back}</DSBack>
         </div>
+        <DSButton
+          onClick={() => {
+            setPermState("idle")
+            // Re-show the allow button (managed via ref, not React state)
+            const el = micBtnRef.current
+            if (el) { el.style.opacity = "1"; el.style.pointerEvents = "auto" }
+          }}
+          color={COLOR.text}
+        >
+          {copy.retry}
+        </DSButton>
+      </div>
 
-        {/* Blocked — back + retry — absolute, same slot */}
-        <div style={{
-          position: "absolute", bottom: "max(1.5rem, env(safe-area-inset-bottom))",
-          left: "1rem", right: "1rem",
-          opacity: permState === "denied" ? 1 : 0,
-          transition: "opacity 0.5s ease",
-          pointerEvents: permState === "denied" ? "auto" : "none",
-          display: "flex", flexDirection: "column", gap: 8,
-        }}>
-          <div style={{ display: "flex", justifyContent: dir === "rtl" ? "flex-start" : "flex-end" }}>
-            <DSBack onClick={onBack}>{copy.back}</DSBack>
-          </div>
-          <DSButton onClick={() => { setPermState("idle") }} color={COLOR.text}>{copy.retry}</DSButton>
-        </div>
-
-        {/* Record icon — absolute, centred in same slot */}
-        <div style={{
-          position: "absolute", bottom: "max(1.5rem, env(safe-area-inset-bottom))",
-          left: 0, right: 0,
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
-          opacity: showRecordBtn ? 1 : 0,
-          transform: showRecordBtn ? "translateY(0)" : "translateY(12px)",
-          transition: "opacity 0.8s ease, transform 0.8s ease",
-          pointerEvents: showRecordBtn ? "auto" : "none",
-        }}>
-          <RecordBtn onClick={isRecording ? stopRecording : startRecording} isRecording={isRecording} />
-        </div>
-
+      {/* ── Record icon — own fixed div, centred ── */}
+      <div style={{
+        position: "fixed", bottom: "max(1.5rem, env(safe-area-inset-bottom))",
+        left: 0, right: 0, zIndex: 20,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+        opacity: showRecordBtn ? 1 : 0,
+        transform: showRecordBtn ? "translateY(0)" : "translateY(12px)",
+        transition: "opacity 0.8s ease, transform 0.8s ease",
+        pointerEvents: showRecordBtn ? "auto" : "none",
+      }}>
+        <RecordBtn onClick={isRecording ? stopRecording : startRecording} isRecording={isRecording} />
       </div>
 
     </DSShell>
