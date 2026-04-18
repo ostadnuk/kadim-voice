@@ -406,7 +406,7 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
         gap: 6,
       }}>
         <a
-          href="https://reactiontime.co"  {/* TODO: update with actual website URL */}
+          href="https://reactiontime.co"
           target="_blank" rel="noopener noreferrer"
           style={{
             fontFamily: FONT.base, fontWeight: 300,
