@@ -14,37 +14,40 @@ interface ScreenRecordProps {
 
 const COPY: Record<Language, {
   micTitle: string; allow: string; requesting: string
-  blockedTitle: string; retry: string; back: string
+  blockedTitle: string; blockedBody: string; retry: string; back: string
   ready: string; rec: string; stop: string
 }> = {
   en: {
-    micTitle:     "To collect your voice signature, I'll ask you to read aloud a text that will appear on screen. For this I need access to your microphone.",
+    micTitle:     "I will present a short text for you to read aloud. When you are ready, press the button below. To do this I need access to your microphone.",
     allow:        "ALLOW ACCESS",
     requesting:   "REQUESTING...",
-    blockedTitle: "Microphone blocked. Tap the button to grant access and continue.",
-    retry:        "ALLOW ACCESS",
+    blockedTitle: "Microphone blocked.",
+    blockedBody:  "To grant access and continue to the recording, press the button below.",
+    retry:        "TRY AGAIN",
     back:         "← back",
     ready:        "VESSEL READY",
     rec:          "RECEIVING SIGNAL",
     stop:         "stop recording",
   },
   he: {
-    micTitle:     "כדי לאסוף את חתימת הקול, תתבקשו לקרוא בקול רם טקסט שיופיע על המסך. נדרשת גישה למיקרופון.",
+    micTitle:     "אציג בפניכם טקסט קצר לקריאה בקול רם. כשתהיו מוכנים, לחצו על הכפתור למטה. לצורך זה נדרשת גישה למיקרופון.",
     allow:        "לאפשר גישה",
     requesting:   "מבקש...",
-    blockedTitle: "המיקרופון חסום. לחיצה על הכפתור תאפשר לאשר את הגישה ולהמשיך בהקלטה.",
-    retry:        "לאפשר גישה",
+    blockedTitle: "המיקרופון חסום.",
+    blockedBody:  "כדי לאשר את הגישה ולהמשיך להקלטה, יש ללחוץ על הכפתור.",
+    retry:        "נסיון נוסף",
     back:         "← חזרה",
     ready:        "הכלי מוכן",
     rec:          "קולט אות",
     stop:         "סיום הקלטה",
   },
   ar: {
-    micTitle:     "لجمع توقيعك الصوتي، سأطلب منك قراءة نص يظهر على الشاشة بصوت عالٍ. أحتاج إلى الوصول إلى الميكروفون.",
+    micTitle:     "سأعرض عليك نصاً قصيراً لقراءته بصوت عالٍ. حين تكون مستعداً، اضغط الزر أدناه. لهذا أحتاج إذن الوصول إلى الميكروفون.",
     allow:        "السماح بالوصول",
     requesting:   "جارٍ الطلب...",
-    blockedTitle: "الميكروفون محظور. اضغط الزر للسماح بالوصول والمتابعة.",
-    retry:        "السماح بالوصول",
+    blockedTitle: "الميكروفون محظور.",
+    blockedBody:  "لمنح الوصول والمتابعة للتسجيل، اضغط الزر أدناه.",
+    retry:        "المحاولة مجدداً",
     back:         "← رجوع",
     ready:        "الوعاء جاهز",
     rec:          "يستقبل الإشارة",
@@ -55,21 +58,28 @@ const COPY: Record<Language, {
 // Text the user reads aloud during recording — appears at reading pace
 const INSTR: Record<Language, string[]> = {
   en: [
-    "I was here.",
-    "My voice was here.",
-    "No other voice can say it this way.",
+    "My voice is the trace of a moment.",
+    "A unique echo that will not return.",
+    "In every word, my signature hides.",
+    "Movement of air. Remnant of presence.",
+    "I am leaving something of myself here.",
+    "A one-time seal, preserved for what comes.",
   ],
   he: [
-    "הייתי כאן.",
-    "קולי היה כאן.",
-    "שום קול אחר לא יכול לומר את זה כך.",
+    "קולי הוא עקבות של רגע.",
+    "הדהוד ייחודי שלא יחזור.",
+    "בכל מילה נחבאת חתימתי.",
+    "תנועת אוויר, שריד של נוכחות.",
+    "אני משאיר כאן משהו מעצמי.",
+    "חותם חד-פעמי, שנשמר לעתיד.",
   ],
   ar: [
-    "كنت هنا.",
-    "صوتي كان هنا.",
-    "لا صوت آخر يستطيع قوله بهذه الطريقة.",
-    "أحمل ما لا يستطيع حمله سواي.",
-    "أترك ما لا يستطيع تركه سواي.",
+    "صوتي أثر لحظة.",
+    "صدى فريد لن يعود.",
+    "في كل كلمة تختبئ بصمتي.",
+    "حركة هواء، بقية حضور.",
+    "أترك هنا شيئاً من نفسي.",
+    "ختم فريد، محفوظ لِما سيأتي.",
   ],
 }
 
@@ -378,9 +388,13 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
           opacity: permState === "denied" ? 1 : 0,
           transition: "opacity 0.5s ease",
           position: permState !== "denied" ? "absolute" : "relative",
+          display: "flex", flexDirection: "column", gap: "0.5rem",
         }}>
-          <p style={{ fontFamily: FONT.base, fontWeight: 400, fontSize: TYPE.lg, lineHeight: 1.65, color: COLOR.error ?? "#e57373", opacity: OPACITY.primary, margin: 0, direction: dir, textAlign: dir === "rtl" ? "right" : "left" }}>
+          <p style={{ fontFamily: FONT.base, fontWeight: 500, fontSize: TYPE.sm, lineHeight: 1.4, color: COLOR.error ?? "#e57373", opacity: 0.9, margin: 0, direction: dir, textAlign: dir === "rtl" ? "right" : "left", letterSpacing: "0.01em" }}>
             {copy.blockedTitle}
+          </p>
+          <p style={{ fontFamily: FONT.base, fontWeight: 400, fontSize: TYPE.lg, lineHeight: 1.65, color: COLOR.text, opacity: OPACITY.primary, margin: 0, direction: dir, textAlign: dir === "rtl" ? "right" : "left" }}>
+            {copy.blockedBody}
           </p>
         </div>
       </div>

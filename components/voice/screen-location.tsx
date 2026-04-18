@@ -17,36 +17,43 @@ interface ScreenLocationProps {
 const COPY: Record<Language, {
   hud: string; title: string; venueLine: string
   cta: string; locating: string; noLocation: string; privacy: string; back: string
+  blockedMsg: string; settingsHint: string
 }> = {
   en: {
-    hud:        "ALMOST THERE",
-    title:      "Before we finish, I'd love to know where your voice is coming from.",
-    venueLine:  "You're at the exhibition. Your location is already confirmed.",
-    cta:        "SHARE LOCATION",
-    locating:   "LOCATING…",
-    noLocation: "Continue without location",
-    privacy:    "Proceeding to the next step means you consent to your voice signature being stored as part of this artwork.",
-    back:       "← back",
+    hud:         "ALMOST THERE",
+    title:       "Before we finish, I'd love to know where your voice is coming from.",
+    venueLine:   "You're at the exhibition. Your location is already confirmed.",
+    cta:         "SHARE LOCATION",
+    locating:    "LOCATING…",
+    noLocation:  "Continue without location",
+    privacy:     "Proceeding to the next step means you consent to your voice signature being stored as part of this artwork.",
+    back:        "← back",
+    blockedMsg:  "Location access is blocked.",
+    settingsHint:"Go to Settings → Safari → Location and allow access, then try again.",
   },
   he: {
-    hud:        "עוד רגע",
-    title:      "לפני סיום אשמח לדעת מאיפה הקול שלך מגיע",
-    venueLine:  "אתה בתערוכה. המיקום שלך כבר מאושר.",
-    cta:        "שיתוף מיקום",
-    locating:   "מאתר…",
-    noLocation: "להמשיך ללא מיקום",
-    privacy:    "המעבר לשלב הבא מהווה הסכמה לשמירת חתימת הקול כחלק מהיצירה",
-    back:       "← חזרה",
+    hud:         "עוד רגע",
+    title:       "לפני סיום אשמח לדעת מאיפה הקול שלך מגיע",
+    venueLine:   "אתה בתערוכה. המיקום שלך כבר מאושר.",
+    cta:         "שיתוף מיקום",
+    locating:    "מאתר…",
+    noLocation:  "להמשיך ללא מיקום",
+    privacy:     "המעבר לשלב הבא מהווה הסכמה לשמירת חתימת הקול כחלק מהיצירה",
+    back:        "← חזרה",
+    blockedMsg:  "הגישה למיקום חסומה.",
+    settingsHint:"עברו להגדרות ← Safari ← מיקום ואפשרו גישה, ואז נסו שוב.",
   },
   ar: {
-    hud:        "لحظة أخيرة",
-    title:      "قبل الانتهاء، أودّ أن أعرف من أين يأتي صوتك.",
-    venueLine:  "أنت في المعرض. موقعك مؤكّد بالفعل.",
-    cta:        "مشاركة الموقع",
-    locating:   "جارٍ التحديد…",
-    noLocation: "المتابعة بدون موقع",
-    privacy:    "المتابعة للخطوة التالية تعني موافقتك على تخزين بصمتك الصوتية كجزء من هذا العمل.",
-    back:       "← رجوع",
+    hud:         "لحظة أخيرة",
+    title:       "قبل الانتهاء، أودّ أن أعرف من أين يأتي صوتك.",
+    venueLine:   "أنت في المعرض. موقعك مؤكّد بالفعل.",
+    cta:         "مشاركة الموقع",
+    locating:    "جارٍ التحديد…",
+    noLocation:  "المتابعة بدون موقع",
+    privacy:     "المتابعة للخطوة التالية تعني موافقتك على تخزين بصمتك الصوتية كجزء من هذا العمل.",
+    back:        "← رجوع",
+    blockedMsg:  "الوصول إلى الموقع محظور.",
+    settingsHint:"اذهب إلى الإعدادات ← Safari ← الموقع واسمح بالوصول، ثم أعد المحاولة.",
   },
 }
 
@@ -62,7 +69,7 @@ export function ScreenLocation({ language, venueId, venueName, onContinue, onBac
   const dir  = language === "en" ? "ltr" : "rtl" as "ltr" | "rtl"
   const copy = COPY[language]
 
-  const [geoState, setGeoState] = useState<"idle" | "locating" | "done" | "failed" | "manual">("idle")
+  const [geoState, setGeoState] = useState<"idle" | "locating" | "done" | "failed" | "blocked" | "manual">("idle")
   const [manualStep, setManualStep] = useState<"country" | "city">("country")
   const ctaRef = useRef<HTMLDivElement>(null)
 
@@ -130,11 +137,11 @@ export function ScreenLocation({ language, venueId, venueName, onContinue, onBac
         onContinue({ sourceType: "remote", venueId: null, venueName: null, country: "", city: "", lat: pos.coords.latitude, lng: pos.coords.longitude })
       },
       (err) => {
-        // Permission denied (code 1) → go straight to manual entry; no dead-end
-        if (err.code === 1) setGeoState("manual")
+        // Permission denied (code 1) → show blocked state with Settings instructions
+        if (err.code === 1) setGeoState("blocked")
         else setGeoState("failed")
       },
-      { timeout: 10000 }
+      { timeout: 12000, enableHighAccuracy: false }
     )
   }
 
@@ -221,6 +228,16 @@ export function ScreenLocation({ language, venueId, venueName, onContinue, onBac
               <p style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.error, opacity: 0.8, margin: 0, textAlign: dir === "rtl" ? "right" : "left" }}>
                 {language === "he" ? "לא הצלחתי לאתר." : language === "ar" ? "تعذّر التحديد." : "Couldn't locate."}
               </p>
+            )}
+            {geoState === "blocked" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <p style={{ fontFamily: FONT.base, fontSize: TYPE.xs, fontWeight: 500, letterSpacing: TRACK.sm, color: COLOR.error, opacity: 0.85, margin: 0, textAlign: dir === "rtl" ? "right" : "left" }}>
+                  {copy.blockedMsg}
+                </p>
+                <p style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary, margin: 0, textAlign: dir === "rtl" ? "right" : "left", lineHeight: 1.5 }}>
+                  {copy.settingsHint}
+                </p>
+              </div>
             )}
             <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.7, textAlign: dir === "rtl" ? "right" : "left", display: "block" }}>
               {copy.privacy}
