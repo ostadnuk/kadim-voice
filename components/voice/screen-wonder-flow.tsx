@@ -14,7 +14,6 @@ import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react
 import dynamic from "next/dynamic"
 import type { Language } from "@/lib/i18n"
 import type { LocationState } from "@/lib/types"
-import { translations } from "@/lib/i18n"
 import { analyzeAudioBlob } from "@/lib/audio-analysis"
 import { DSShell, DSTopBar, DSButton, AltSigTicker, COLOR, FONT, TYPE, TRACK, OPACITY } from "./ds"
 import type { CanvasPhase } from "./voice-canvas-unified"
@@ -125,7 +124,6 @@ export function ScreenWonderFlow({
 }: ScreenWonderFlowProps) {
   const dir = language === "en" ? "ltr" : "rtl" as "ltr" | "rtl"
   const lbl = LABELS[language]
-  const t   = translations[language].result
 
   const locationLabel = location.sourceType === "exhibition" && location.venueName
     ? location.venueName
@@ -415,64 +413,48 @@ export function ScreenWonderFlow({
         </div>
       </div>
 
-      {/* Imprint text — large statement + single metadata line */}
+      {/* Imprint metadata — appears under the HUD, top of screen */}
       <div style={{
-        position: "absolute", inset: 0, zIndex: 8, pointerEvents: "none",
+        position: "absolute", top: 0, left: 0, right: 0, zIndex: 9, pointerEvents: "none",
+        paddingTop: "clamp(5.5rem, 15vw, 7.5rem)",
+        paddingLeft: "clamp(1.25rem, 6vw, 2.5rem)",
+        paddingRight: "clamp(1.25rem, 6vw, 2.5rem)",
         opacity: canvasPhase === "imprint" ? 1 : 0,
-        transition: "opacity 1.4s ease 1.2s",
+        transition: "opacity 1.4s ease 2s",
+        display: "flex", flexDirection: "column",
+        alignItems: dir === "rtl" ? "flex-end" : "flex-start",
+        gap: "0.55rem",
       }}>
+        {/* Metrics row */}
         <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0,
-          paddingLeft: "clamp(1.25rem, 6vw, 2.5rem)",
-          paddingRight: "clamp(1.25rem, 6vw, 2.5rem)",
-          paddingBottom: "clamp(5rem, 14vw, 7rem)",
-          display: "flex", flexDirection: "column",
-          alignItems: dir === "rtl" ? "flex-end" : "flex-start",
-          gap: "0.45rem",
+          display: "flex",
+          flexDirection: dir === "rtl" ? "row-reverse" : "row",
+          gap: "clamp(1rem, 4vw, 1.75rem)",
         }}>
-          {/* Main statement — large */}
-          <p style={{
-            fontFamily: FONT.base, fontWeight: 600,
-            fontSize: "clamp(1.9rem, 7vw, 2.8rem)",
-            lineHeight: 1.2,
-            color: COLOR.text, opacity: OPACITY.primary,
-            margin: 0, textAlign: dir === "rtl" ? "right" : "left",
-          }}>
-            {t.title.replace("\n", " ")}
+          {[
+            { label: lbl.amp,    val: Math.round(bassE * 100), color: BAND.amp },
+            { label: lbl.pitch,  val: Math.round(midE  * 100), color: BAND.pitch },
+            { label: lbl.timbre, val: Math.round(highE * 100), color: BAND.timbre },
+          ].map(({ label, val, color }) => (
+            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.55rem", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.7 }}>
+                {label}
+              </span>
+              <span style={{ fontFamily: FONT.base, fontWeight: 500, fontSize: TYPE.sm, color, textShadow: `0 0 10px ${color}70` }}>
+                {val}%
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Cosmic + earth time */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.55, margin: 0, direction: "ltr" }}>
+            T+ {cosmicTime.toLocaleString("en-US")}
           </p>
-
-          {/* Metrics row — same colors as canvas bands */}
-          <div style={{
-            display: "flex",
-            flexDirection: dir === "rtl" ? "row-reverse" : "row",
-            gap: "clamp(1rem, 4vw, 1.75rem)",
-            marginTop: "0.35rem",
-          }}>
-            {[
-              { label: lbl.amp,    val: Math.round(bassE * 100), color: BAND.amp },
-              { label: lbl.pitch,  val: Math.round(midE  * 100), color: BAND.pitch },
-              { label: lbl.timbre, val: Math.round(highE * 100), color: BAND.timbre },
-            ].map(({ label, val, color }) => (
-              <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.55rem", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.7 }}>
-                  {label}
-                </span>
-                <span style={{ fontFamily: FONT.base, fontWeight: 500, fontSize: TYPE.sm, color, textShadow: `0 0 10px ${color}70` }}>
-                  {val}%
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Cosmic + earth time */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: "0.25rem" }}>
-            <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.6, margin: 0, direction: "ltr" }}>
-              T+ {cosmicTime.toLocaleString("en-US")}
-            </p>
-            <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.8, margin: 0, direction: "ltr" }}>
-              {locationLabel}  ·  {formattedTime}
-            </p>
-          </div>
+          <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.75, margin: 0, direction: "ltr" }}>
+            {locationLabel}  ·  {formattedTime}
+          </p>
         </div>
       </div>
 
