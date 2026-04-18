@@ -7,11 +7,9 @@
  *   Phase 3 (transmitting):     cloud holds voice shape, slow drift
  *   Phase 4 (imprint):          cloud → Chladni nodal-line pattern
  *
- * Color scheme: particles are tinted by their spectral band
- *   Low freq  → warm amber  #e8a87c
- *   Mid freq  → teal        #7dd4c0
- *   High freq → soft violet #c4a8e8
- * All three crystallise to cool blue-white as the imprint morph completes.
+ * Color scheme: unified warm silver (#c8d8ee) throughout all cloud/voice phases,
+ * crystallising to cool blue-white (#edf4ff) as the Chladni imprint forms.
+ * Per-particle breathing (aPhase) and subtle turbulence give organic liveness.
  */
 
 import { useRef, useMemo, useEffect } from "react"
@@ -35,11 +33,9 @@ export const MORPH_A_DONE_AT = READING_END + MORPH_A_DUR   // 9.0 s
 /** Duration of the voice→imprint morph */
 const MORPH_B_DUR  = 4.5
 
-// Band colors
-const C_AMP     = new THREE.Color("#e8a87c")  // warm amber  — amplitude / low
-const C_PITCH   = new THREE.Color("#7dd4c0")  // teal        — pitch / mid
-const C_TIMBRE  = new THREE.Color("#c4a8e8")  // soft violet — timbre / high
-const C_IMPRINT = new THREE.Color("#dde6ff")  // cool blue-white — crystallised
+// Particle colors — warm silver in cloud, crystalline blue-white at imprint
+const C_BASE    = new THREE.Color("#c8d8ee")  // warm silver — cloud phase
+const C_IMPRINT = new THREE.Color("#edf4ff")  // cool crystal — imprint phase
 
 // ── Position builders ─────────────────────────────────────────────────────────
 
@@ -151,21 +147,18 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
   const imprintReadyRef = useRef(false)
 
   const { geometry, material } = useMemo(() => {
-    const n = Math.max(waveformPeaks.length, 1)
-
-    // Continuous spectral band: 0.0 (bass/amber) → 1.0 (high/violet)
-    const bands = new Float32Array(N)
-    for (let i = 0; i < N; i++) {
-      bands[i] = (i % n) / Math.max(n - 1, 1)
-    }
-
     const randomPos = buildRandom()
     const voicePos  = buildVoice(waveformPeaks)
-    const sizes     = new Float32Array(N)
+
+    // Per-particle base size — 12 % accent particles, rest fine
+    const sizes  = new Float32Array(N)
+    // Per-particle breathing phase offset (0–2π) — drives organic pulsing
+    const phases = new Float32Array(N)
     for (let i = 0; i < N; i++) {
-      sizes[i] = Math.random() < 0.12
-        ? 0.028 + Math.random() * 0.020
-        : 0.007 + Math.random() * 0.013
+      sizes[i]  = Math.random() < 0.12
+        ? 0.026 + Math.random() * 0.018
+        : 0.006 + Math.random() * 0.012
+      phases[i] = Math.random() * Math.PI * 2
     }
 
     const geo = new THREE.BufferGeometry()
@@ -174,7 +167,7 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
     geo.setAttribute("aVoicePos",   new THREE.BufferAttribute(voicePos, 3))
     geo.setAttribute("aImprintPos", new THREE.BufferAttribute(voicePos.slice(), 3))
     geo.setAttribute("size",        new THREE.BufferAttribute(sizes, 1))
-    geo.setAttribute("aColorBand",  new THREE.BufferAttribute(bands, 1))
+    geo.setAttribute("aPhase",      new THREE.BufferAttribute(phases, 1))
 
     const mat = new THREE.ShaderMaterial({
       transparent: true,
@@ -184,51 +177,72 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
         uOpacity:      { value: 0.0 },
         uMorphA:       { value: 0.0 },
         uMorphB:       { value: 0.0 },
-        uColorAmp:     { value: C_AMP },
-        uColorPitch:   { value: C_PITCH },
-        uColorTimbre:  { value: C_TIMBRE },
+        uTime:         { value: 0.0 },
+        uColorBase:    { value: C_BASE },
         uColorImprint: { value: C_IMPRINT },
       },
       vertexShader: `
         attribute float size;
+        attribute float aPhase;
         attribute vec3  aRandomPos;
         attribute vec3  aVoicePos;
         attribute vec3  aImprintPos;
-        attribute float aColorBand;
         uniform float   uOpacity;
         uniform float   uMorphA;
         uniform float   uMorphB;
+        uniform float   uTime;
         varying float   vAlpha;
-        varying float   vBand;
+        varying float   vBreath;
+
+        // Pseudo-random hash for per-particle turbulence
+        float hash(float n) { return fract(sin(n) * 43758.5453); }
+
         void main() {
+          // ── Morphed position ────────────────────────────────────────────
           vec3 voiced = mix(aRandomPos, aVoicePos, uMorphA);
           vec3 pos    = mix(voiced, aImprintPos, uMorphB);
-          vec4 mv     = modelViewMatrix * vec4(pos, 1.0);
-          gl_PointSize = size * (500.0 / -mv.z);
+
+          // ── Organic turbulence — gentle in cloud, fades out at imprint ──
+          float turbScale = 1.0 - smoothstep(0.4, 0.9, uMorphB);
+          float t1 = uTime * 0.38 + aPhase;
+          float t2 = uTime * 0.27 + aPhase * 1.3;
+          float t3 = uTime * 0.19 + aPhase * 0.7;
+          pos.x += sin(t1) * 0.018 * turbScale;
+          pos.y += cos(t2) * 0.018 * turbScale;
+          pos.z += sin(t3) * 0.012 * turbScale;
+
+          // ── Breathing size — slower/subtler at imprint ──────────────────
+          float breathAmt  = mix(0.38, 0.10, smoothstep(0.5, 1.0, uMorphB));
+          float breathFreq = mix(1.55, 0.60, smoothstep(0.5, 1.0, uMorphB));
+          float breath     = 1.0 + breathAmt * sin(uTime * breathFreq + aPhase);
+          vBreath = breath;
+
+          vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+          gl_PointSize = size * breath * (500.0 / -mv.z);
           gl_Position  = projectionMatrix * mv;
-          float depth  = clamp((-mv.z - 1.0) / 12.0, 0.0, 1.0);
-          vAlpha = uOpacity * (0.55 + (1.0 - depth) * 0.45);
-          vBand  = aColorBand;
+
+          float depth = clamp((-mv.z - 1.0) / 12.0, 0.0, 1.0);
+          vAlpha = uOpacity * (0.52 + (1.0 - depth) * 0.48);
         }
       `,
       fragmentShader: `
-        uniform vec3  uColorAmp;
-        uniform vec3  uColorPitch;
-        uniform vec3  uColorTimbre;
+        uniform vec3  uColorBase;
         uniform vec3  uColorImprint;
         uniform float uMorphB;
         varying float vAlpha;
-        varying float vBand;
+        varying float vBreath;
         void main() {
           vec2  uv   = gl_PointCoord - 0.5;
           float dist = length(uv);
           if (dist > 0.5) discard;
-          float alpha = (1.0 - smoothstep(0.25, 0.5, dist)) * vAlpha;
-          // Spectral 3-way blend: amber → teal → violet
-          vec3 voiceCol = mix(uColorAmp,   uColorPitch,  smoothstep(0.0, 0.5, vBand));
-          voiceCol      = mix(voiceCol,    uColorTimbre, smoothstep(0.5, 1.0, vBand));
-          // Crystallise to cool blue-white as imprint forms
-          vec3 col = mix(voiceCol, uColorImprint, uMorphB);
+
+          // Softer falloff when breathing is large; crisper at imprint
+          float edge  = mix(0.28, 0.22, smoothstep(0.5, 1.0, uMorphB));
+          float alpha = (1.0 - smoothstep(edge, 0.5, dist)) * vAlpha;
+
+          // Warm silver → cool crystal as imprint crystallises
+          vec3 col = mix(uColorBase, uColorImprint, smoothstep(0.55, 1.0, uMorphB));
+
           gl_FragColor = vec4(col, alpha);
         }
       `,
@@ -261,6 +275,9 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
     const elapsed = clock.getElapsedTime() - startRef.current
 
     gl.setClearColor(BG, 1)
+
+    // Drive breathing / turbulence time
+    material.uniforms.uTime.value = clock.getElapsedTime()
 
     // ── Opacity ──────────────────────────────────────────────────────────────
     // Reading phase (0 → READING_END): fade in softly to 0.28
