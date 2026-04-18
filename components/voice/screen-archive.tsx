@@ -173,11 +173,12 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
         right={<WorldClock />}
       />
 
-      {/* ── Collective pattern hero ──────────────────────────────────────── */}
+      {/* ── Collective pattern hero — tall, full-bleed, breathing 3D ──────── */}
       <div style={{
         position:   "relative",
         width:      "100%",
-        height:     "clamp(260px, 52vw, 420px)",
+        height:     "60svh",
+        minHeight:  320,
         background: COLOR.bg,
         flexShrink: 0,
       }}>
@@ -185,58 +186,64 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
           <ArchiveCanvasDynamic signaturePoints={collectiveSig} />
         ) : (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color: COLOR.secondary, opacity: 0.4 }}>
+            <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color: COLOR.secondary, opacity: 0.3 }}>
               …
             </span>
           </div>
         )}
 
-        {/* Overlay: count + label */}
+        {/* Top-right: live count */}
         <div style={{
-          position:  "absolute",
-          bottom:    "clamp(1rem, 4vw, 1.75rem)",
-          left:      "clamp(1.25rem, 6vw, 2.5rem)",
-          right:     "clamp(1.25rem, 6vw, 2.5rem)",
-          pointerEvents: "none",
-          textAlign: dir === "rtl" ? "right" : "left",
+          position: "absolute", top: "clamp(0.75rem, 3vw, 1.25rem)",
+          right: "clamp(1.25rem, 6vw, 2.5rem)",
+          pointerEvents: "none", textAlign: "right",
         }}>
           <div style={{
             fontFamily: FONT.base, fontWeight: 600,
-            fontSize: "clamp(1.6rem, 6vw, 2.4rem)",
-            letterSpacing: "-0.01em",
-            color: COLOR.text,
-            lineHeight: 1,
+            fontSize: "clamp(2rem, 7vw, 3rem)",
+            letterSpacing: "-0.02em",
+            color: COLOR.text, lineHeight: 1,
+            opacity: collectiveSig ? 1 : 0,
+            transition: "opacity 1.2s ease",
           }}>
             {collectiveTotal.toLocaleString()}
           </div>
           <div style={{
             fontFamily: FONT.base, fontWeight: 300,
-            fontSize: TYPE.xs, letterSpacing: TRACK.caps,
-            color: "#c8d4f8", opacity: 0.7,
-            marginTop: 4,
+            fontSize: TYPE.hud, letterSpacing: TRACK.caps,
+            color: "#c8d4f8", opacity: 0.55,
+            marginTop: 3, textTransform: "uppercase",
           }}>
-            {t.voices(collectiveTotal).toUpperCase()} · {t.collective}
+            {t.voices(collectiveTotal)}
           </div>
+        </div>
+
+        {/* Bottom: sub-label */}
+        <div style={{
+          position: "absolute", bottom: "clamp(1rem, 4vw, 1.5rem)",
+          left: "clamp(1.25rem, 6vw, 2.5rem)", right: "clamp(1.25rem, 6vw, 2.5rem)",
+          pointerEvents: "none",
+          textAlign: dir === "rtl" ? "right" : "left",
+        }}>
           <div style={{
             fontFamily: FONT.base, fontWeight: 300,
             fontSize: TYPE.hud, letterSpacing: TRACK.sm,
-            color: COLOR.text, opacity: OPACITY.tertiary * 0.8,
-            marginTop: 3,
+            color: COLOR.text, opacity: OPACITY.tertiary * 0.7,
           }}>
             {t.collectiveSub}
           </div>
         </div>
       </div>
 
-      {/* ── Individual signatures ────────────────────────────────────────── */}
-      <div style={{ padding: "clamp(1.25rem, 6vw, 2rem) clamp(1.25rem, 6vw, 2rem) 4rem" }}>
+      {/* ── Individual signatures — elegant list ─────────────────────────── */}
+      <div style={{ paddingBottom: "4rem" }}>
 
         {/* Section label */}
         <div style={{
+          padding: "clamp(1rem, 4vw, 1.5rem) clamp(1.25rem, 6vw, 2.5rem) 0.5rem",
           fontFamily: FONT.base, fontWeight: 300,
           fontSize: TYPE.hud, letterSpacing: TRACK.caps,
-          color: COLOR.secondary, opacity: 0.5,
-          marginBottom: "clamp(0.75rem, 3vw, 1.25rem)",
+          color: COLOR.secondary, opacity: 0.4,
           textTransform: "uppercase",
         }}>
           {t.individuals}
@@ -256,58 +263,84 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
           </div>
         ) : (
           <>
-            {/* Thumbnail grid — 3 columns */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "clamp(0.75rem, 3vw, 1.25rem)" }}>
-              {entries.map((entry) => (
-                <button
-                  key={entry.id}
-                  onClick={() => setSelectedEntry(entry)}
-                  style={{
-                    display: "flex", flexDirection: "column", alignItems: "center",
-                    gap: 8, background: "none", border: "none", cursor: "pointer",
-                    padding: 0, textAlign: "center",
-                  }}
-                >
-                  {/* Chladni pattern thumbnail */}
+            {entries.map((entry, idx) => (
+              <button
+                key={entry.id}
+                onClick={() => setSelectedEntry(entry)}
+                style={{
+                  width: "100%", background: "none", border: "none",
+                  cursor: "pointer", textAlign: "left",
+                  padding: "0 clamp(1.25rem, 6vw, 2.5rem)",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                {/* Divider above every row */}
+                <div style={{ height: 1, background: "rgba(200,212,248,0.07)", marginBottom: "0.85rem", marginTop: idx === 0 ? 0 : 0 }} />
+
+                <div style={{
+                  display: "flex", alignItems: "center",
+                  flexDirection: dir === "rtl" ? "row-reverse" : "row",
+                  gap: "clamp(0.75rem, 3vw, 1rem)",
+                  paddingBottom: "0.85rem",
+                }}>
+                  {/* Thumbnail */}
                   <div style={{
-                    width: "100%", aspectRatio: "1",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "rgba(200,212,248,0.04)",
+                    width: 52, height: 52, flexShrink: 0,
                     borderRadius: "50%",
+                    background: "rgba(200,212,248,0.05)",
                     overflow: "hidden",
+                    display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     <ChladniThumbnail
                       signaturePoints={entry.signaturePoints}
-                      size={80}
-                      gridSize={72}
+                      size={52}
+                      gridSize={44}
                     />
                   </div>
 
-                  {/* Location + date */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
+                  {/* Text */}
+                  <div style={{
+                    flex: 1, display: "flex", flexDirection: "column", gap: 3,
+                    textAlign: dir === "rtl" ? "right" : "left",
+                    overflow: "hidden",
+                  }}>
                     <span style={{
-                      fontFamily: FONT.base, fontSize: TYPE.hud,
-                      letterSpacing: "0.05em",
+                      fontFamily: FONT.base, fontWeight: 400,
+                      fontSize: TYPE.sm,
                       color: COLOR.text, opacity: OPACITY.secondary,
                       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     }}>
                       {locLabel(entry)}
                     </span>
                     <span style={{
-                      fontFamily: FONT.base, fontSize: "0.6rem",
-                      letterSpacing: TRACK.caps,
-                      color: COLOR.secondary, opacity: 0.4,
+                      fontFamily: FONT.base, fontWeight: 300,
+                      fontSize: TYPE.hud, letterSpacing: TRACK.sm,
+                      color: COLOR.secondary, opacity: 0.45,
                     }}>
-                      {fmtDate(entry.createdAt)}
+                      {fmtDate(entry.createdAt)}  ·  {fmtTime(entry.createdAt)}
                     </span>
                   </div>
-                </button>
-              ))}
-            </div>
+
+                  {/* Duration badge */}
+                  <span style={{
+                    fontFamily: FONT.mono ?? FONT.base, fontWeight: 300,
+                    fontSize: TYPE.hud, letterSpacing: TRACK.caps,
+                    color: COLOR.secondary, opacity: 0.35,
+                    flexShrink: 0,
+                    direction: "ltr",
+                  }}>
+                    {entry.durationSec}s
+                  </span>
+                </div>
+              </button>
+            ))}
+
+            {/* Bottom divider */}
+            <div style={{ height: 1, background: "rgba(200,212,248,0.07)", margin: "0 clamp(1.25rem, 6vw, 2.5rem)" }} />
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: 32 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: 28 }}>
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}

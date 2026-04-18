@@ -19,17 +19,20 @@ function CollectiveScene({ signaturePoints }: { signaturePoints: number[] }) {
   const startRef  = useRef<number | null>(null)
 
   const { geometry, material } = useMemo(() => {
-    const pos   = buildChladniPositions(signaturePoints, N)
-    const sizes = new Float32Array(N)
+    const pos    = buildChladniPositions(signaturePoints, N)
+    const sizes  = new Float32Array(N)
+    const phases = new Float32Array(N)
     for (let i = 0; i < N; i++) {
-      sizes[i] = Math.random() < 0.10
+      sizes[i]  = Math.random() < 0.10
         ? 0.022 + Math.random() * 0.016
         : 0.005 + Math.random() * 0.010
+      phases[i] = Math.random() * Math.PI * 2
     }
 
     const geo = new THREE.BufferGeometry()
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3))
     geo.setAttribute("size",     new THREE.BufferAttribute(sizes, 1))
+    geo.setAttribute("aPhase",   new THREE.BufferAttribute(phases, 1))
 
     const mat = new THREE.ShaderMaterial({
       transparent: true,
@@ -37,18 +40,23 @@ function CollectiveScene({ signaturePoints }: { signaturePoints: number[] }) {
       blending:    THREE.AdditiveBlending,
       uniforms: {
         uOpacity: { value: 0.0 },
-        uColor:   { value: new THREE.Color("#c8d4f8") },
+        uTime:    { value: 0.0 },
+        uColor:   { value: new THREE.Color("#edf4ff") },
       },
       vertexShader: `
         attribute float size;
+        attribute float aPhase;
         uniform float   uOpacity;
+        uniform float   uTime;
         varying float   vAlpha;
         void main() {
+          // Subtle per-particle breathing — crispness of a settled plate
+          float breath = 1.0 + 0.12 * sin(uTime * 0.72 + aPhase);
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = size * (500.0 / -mv.z);
+          gl_PointSize = size * breath * (500.0 / -mv.z);
           gl_Position  = projectionMatrix * mv;
           float depth  = clamp((-mv.z - 1.0) / 12.0, 0.0, 1.0);
-          vAlpha = uOpacity * (0.55 + (1.0 - depth) * 0.45);
+          vAlpha = uOpacity * (0.52 + (1.0 - depth) * 0.48);
         }
       `,
       fragmentShader: `
@@ -58,7 +66,7 @@ function CollectiveScene({ signaturePoints }: { signaturePoints: number[] }) {
           vec2  uv   = gl_PointCoord - 0.5;
           float dist = length(uv);
           if (dist > 0.5) discard;
-          float alpha = (1.0 - smoothstep(0.25, 0.5, dist)) * vAlpha;
+          float alpha = (1.0 - smoothstep(0.22, 0.5, dist)) * vAlpha;
           gl_FragColor = vec4(uColor, alpha);
         }
       `,
@@ -75,13 +83,13 @@ function CollectiveScene({ signaturePoints }: { signaturePoints: number[] }) {
 
     gl.setClearColor(BG, 1)
 
-    // Gentle fade in over 3s
-    material.uniforms.uOpacity.value = Math.min(elapsed / 3.0, 0.88)
+    material.uniforms.uOpacity.value = Math.min(elapsed / 2.5, 0.9)
+    material.uniforms.uTime.value    = clock.getElapsedTime()
 
-    // Barely tilts — like a Chladni plate suspended in space
-    pointsRef.current.rotation.x = Math.sin(elapsed * 0.014) * 0.07
-    pointsRef.current.rotation.y = elapsed * 0.005
-    pointsRef.current.rotation.z = Math.cos(elapsed * 0.009) * 0.04
+    // Slow 3-axis drift — feels like a plate floating in zero gravity
+    pointsRef.current.rotation.x = Math.sin(elapsed * 0.011) * 0.10
+    pointsRef.current.rotation.y = elapsed * 0.006 + Math.sin(elapsed * 0.017) * 0.04
+    pointsRef.current.rotation.z = Math.cos(elapsed * 0.008) * 0.06
   })
 
   return <points ref={pointsRef} geometry={geometry} material={material} />
