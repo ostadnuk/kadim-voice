@@ -128,7 +128,11 @@ export function ScreenLocation({ language, venueId, venueName, onContinue, onBac
         setGeoState("done")
         onContinue({ sourceType: "remote", venueId: null, venueName: null, country: "", city: "", lat: pos.coords.latitude, lng: pos.coords.longitude })
       },
-      () => setGeoState("failed"),
+      (err) => {
+        // Permission denied (code 1) → go straight to manual entry; no dead-end
+        if (err.code === 1) setGeoState("manual")
+        else setGeoState("failed")
+      },
       { timeout: 10000 }
     )
   }
