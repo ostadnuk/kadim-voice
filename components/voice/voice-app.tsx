@@ -5,15 +5,9 @@ import { useSearchParams } from "next/navigation"
 import { ScreenWelcome } from "./screen-welcome"
 import { ScreenLanguage } from "./screen-language"
 import { ScreenExhibition } from "./screen-exhibition"
-import { ScreenIntent } from "./screen-intent"
-import { ScreenWonder } from "./screen-wonder"
 import { ScreenWonderFlow } from "./screen-wonder-flow"
 import { ScreenRecord } from "./screen-record"
-import { ScreenReview } from "./screen-review"
 import { ScreenLocation } from "./screen-location"
-import { ScreenConsent } from "./screen-consent"
-import { ScreenUpload } from "./screen-upload"
-import { ScreenResult } from "./screen-result"
 import { ScreenArchive } from "./screen-archive"
 import { getVenueById } from "@/lib/mock-api"
 import type { FlowStep, RecordingState, LocationState, ConsentState } from "@/lib/types"
@@ -25,6 +19,7 @@ import { LanguageProvider, StepProvider } from "./ds"
 const DEV_STEPS: Array<FlowStep | "archive"> = [
   "welcome", "language", "exhibition", "record", "location", "wunderflow", "archive",
 ]
+// Note: "wonder" and "review" screens removed — dead code cleaned up
 
 function mockRecording(): RecordingState {
   const dur   = 18
@@ -202,30 +197,6 @@ export function VoiceApp() {
           />
         )
 
-      case "wonder":
-        if (!recording || !location) return null
-        return (
-          <ScreenWonder
-            language={language}
-            waveformPeaks={recording.waveformPeaks}
-            duration={recording.duration}
-            location={location}
-            onContinue={() => setStep("wunderflow")}
-            onReRecord={() => { setRecording(null); setStep("record") }}
-          />
-        )
-
-      case "review":
-        if (!recording) return null
-        return (
-          <ScreenReview
-            language={language}
-            recording={recording}
-            onContinue={() => setStep("location")}
-            onReRecord={() => { setRecording(null); setStep("record") }}
-          />
-        )
-
       case "archive":
         return <ScreenArchive language={language} onBack={resetFlow} />
 
@@ -234,9 +205,9 @@ export function VoiceApp() {
     }
   }
 
+  // Actual 5-step flow: exhibition(1) → record(2) → location(3) → wunderflow(4) → archive(5)
   const stepNumber: Record<string, number> = {
-    exhibition: 1, intent: 1, record: 2, review: 3,
-    location: 4, consent: 5, upload: 5, result: 6, archive: 6,
+    exhibition: 1, record: 2, location: 3, wunderflow: 4, archive: 5,
   }
 
   return (

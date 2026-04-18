@@ -29,7 +29,7 @@ const COPY: Record<Language, {
     privacy:     "Proceeding to the next step means you consent to your voice signature being stored as part of this artwork.",
     back:        "← back",
     blockedMsg:  "Location access is blocked.",
-    settingsHint:"Go to Settings → Safari → Location and allow access, then try again.",
+    settingsHint:"Open your browser or phone Settings → find Location / Permissions → allow access for this site, then try again.",
   },
   he: {
     hud:         "עוד רגע",
@@ -41,7 +41,7 @@ const COPY: Record<Language, {
     privacy:     "המעבר לשלב הבא מהווה הסכמה לשמירת חתימת הקול כחלק מהיצירה",
     back:        "← חזרה",
     blockedMsg:  "הגישה למיקום חסומה.",
-    settingsHint:"עברו להגדרות ← Safari ← מיקום ואפשרו גישה, ואז נסו שוב.",
+    settingsHint:"פתחו הגדרות הדפדפן או הטלפון ← מיקום / הרשאות ← אפשרו גישה לאתר זה, ואז נסו שוב.",
   },
   ar: {
     hud:         "لحظة أخيرة",
@@ -53,7 +53,7 @@ const COPY: Record<Language, {
     privacy:     "المتابعة للخطوة التالية تعني موافقتك على تخزين بصمتك الصوتية كجزء من هذا العمل.",
     back:        "← رجوع",
     blockedMsg:  "الوصول إلى الموقع محظور.",
-    settingsHint:"اذهب إلى الإعدادات ← Safari ← الموقع واسمح بالوصول، ثم أعد المحاولة.",
+    settingsHint:"افتح إعدادات المتصفح أو الهاتف ← الموقع / الأذونات ← اسمح بالوصول لهذا الموقع، ثم أعد المحاولة.",
   },
 }
 

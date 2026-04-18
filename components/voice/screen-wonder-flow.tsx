@@ -134,6 +134,8 @@ export function ScreenWonderFlow({
   const [canvasPhase,     setCanvasPhase]     = useState<CanvasPhase>("wonder")
   const [signaturePoints, setSignaturePoints] = useState<number[] | null>(null)
   const [uploadError,     setUploadError]     = useState(false)
+  const [uploadAttempts,  setUploadAttempts]  = useState(0)
+  const [uploadGaveUp,    setUploadGaveUp]    = useState(false)
   const [visibleLines,    setVisibleLines]    = useState(0)
   const [formattedTime] = useState(() => new Date().toLocaleString(
     language === "en" ? "en-GB" : language === "he" ? "he-IL" : "ar-SA",
@@ -214,9 +216,19 @@ export function ScreenWonderFlow({
       setUploadError(true)
       setCanvasPhase("wonder")
       hasStartedUpload.current = false
-      setTimeout(() => {
-        if (hasStartedUpload.current === false) runUpload()
-      }, 3000)
+      setUploadAttempts(prev => {
+        const next = prev + 1
+        if (next >= 3) {
+          // Give up auto-retry after 3 attempts — show manual retry button
+          setUploadGaveUp(true)
+        } else {
+          // Exponential backoff: 3s, 6s, 12s
+          setTimeout(() => {
+            if (hasStartedUpload.current === false) runUpload()
+          }, 3000 * Math.pow(2, prev))
+        }
+        return next
+      })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioBlob, waveformPeaks, duration, location, mixOptIn])
@@ -458,16 +470,37 @@ export function ScreenWonderFlow({
         </div>
       </div>
 
-      {/* Subtle error notice */}
+      {/* Error notice — auto-retry or manual retry */}
       {uploadError && (
         <div style={{
           position: "absolute", top: "clamp(5rem, 15vw, 7rem)",
           left: "clamp(1.25rem, 6vw, 2.5rem)", right: "clamp(1.25rem, 6vw, 2.5rem)",
-          zIndex: 12, pointerEvents: "none",
+          zIndex: 12,
+          display: "flex", flexDirection: "column",
+          alignItems: dir === "rtl" ? "flex-end" : "flex-start",
+          gap: 8,
         }}>
           <p style={{ fontFamily: FONT.base, fontSize: TYPE.xs, color: COLOR.error, opacity: 0.7, margin: 0 }}>
             {lbl.retryError}
           </p>
+          {uploadGaveUp && (
+            <button
+              onClick={() => {
+                setUploadGaveUp(false)
+                setUploadAttempts(0)
+                setUploadError(false)
+                runUpload()
+              }}
+              style={{
+                fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps,
+                color: COLOR.text, background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                padding: "6px 14px", cursor: "pointer",
+              }}
+            >
+              {language === "he" ? "נסה שוב" : language === "ar" ? "أعد المحاولة" : "RETRY"}
+            </button>
+          )}
         </div>
       )}
 

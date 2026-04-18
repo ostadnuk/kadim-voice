@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import dynamic from "next/dynamic"
 import { ChladniThumbnail } from "./chladni-thumbnail"
 import { Waveform } from "./waveform"
@@ -131,9 +131,10 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
   const [page,          setPage]          = useState(1)
   const [loading,       setLoading]       = useState(true)
 
-  // Detail dialog
+  // Detail dialog + audio playback
   const [selectedEntry, setSelectedEntry] = useState<ArchiveEntry | null>(null)
   const [playingId,     setPlayingId]     = useState<string | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // ── Fetch collective on mount ──────────────────────────────────────────────
   useEffect(() => {
@@ -421,7 +422,11 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
       </div>
 
       {/* ── Entry detail dialog ───────────────────────────────────────────── */}
-      <Dialog open={!!selectedEntry} onOpenChange={() => setSelectedEntry(null)}>
+      <Dialog open={!!selectedEntry} onOpenChange={() => {
+        audioRef.current?.pause()
+        setPlayingId(null)
+        setSelectedEntry(null)
+      }}>
         {selectedEntry && (
           <DialogContent style={{
             background: COLOR.bg, border: `1px solid rgba(200,212,248,0.1)`,
@@ -456,7 +461,24 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
                 <Waveform peaks={selectedEntry.waveformPeaks} height={40} />
                 <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
                   <button
-                    onClick={() => setPlayingId(playingId === selectedEntry.id ? null : selectedEntry.id)}
+                    onClick={() => {
+                      if (playingId === selectedEntry.id) {
+                        audioRef.current?.pause()
+                        setPlayingId(null)
+                      } else {
+                        if (audioRef.current) {
+                          audioRef.current.pause()
+                          audioRef.current.src = selectedEntry.audioUrl
+                          audioRef.current.play().catch(() => {})
+                        } else {
+                          const a = new Audio(selectedEntry.audioUrl)
+                          audioRef.current = a
+                          a.onended = () => setPlayingId(null)
+                          a.play().catch(() => {})
+                        }
+                        setPlayingId(selectedEntry.id)
+                      }
+                    }}
                     aria-label={playingId === selectedEntry.id ? "Pause" : "Play"}
                     style={{
                       width: TOUCH_MIN, height: TOUCH_MIN,

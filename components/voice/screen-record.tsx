@@ -289,7 +289,12 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
       const sec = Math.floor((Date.now() - startTimeRef.current) / 1000)
       elapsedRef.current = sec
       setElapsed(sec)
-      // no time limit — recording continues until user stops
+      // Auto-stop at 90s max
+      if (sec >= 90) {
+        clearInterval(timerRef.current!)
+        if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop()
+        setIsRecording(false)
+      }
     }, 250)
   }
 
@@ -357,6 +362,11 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
           {isRecording && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", display: "inline-block", animation: "rec-dot 1s ease-in-out infinite", flexShrink: 0 }} />}
           <span>{isRecording ? copy.rec : copy.ready}</span>
           {isRecording && <span style={{ opacity: 0.55, letterSpacing: TRACK.sm }}>· {fmt(elapsed)}</span>}
+          {isRecording && elapsed >= 80 && (
+            <span style={{ opacity: 0.9, color: "#e57373", letterSpacing: TRACK.sm, fontSize: "0.7rem" }}>
+              · {90 - elapsed}s
+            </span>
+          )}
         </div>
       </div>
 
