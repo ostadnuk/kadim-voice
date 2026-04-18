@@ -69,7 +69,7 @@ export function ScreenIntro({ language, onStart, onArchive }: ScreenIntroProps) 
       `}</style>
 
       <DSTopBar
-        left={<SignalBar color={color} />}
+        
         right={
           <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: OPACITY.primary }}>
             VESSEL · INTERIOR

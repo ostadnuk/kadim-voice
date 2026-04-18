@@ -39,6 +39,7 @@ export type FlowStep =
   | "welcome"
   | "language"
   | "exhibition"
+  | "wonder"
   | "intro"
   | "intent"
   | "record"
@@ -47,6 +48,7 @@ export type FlowStep =
   | "consent"
   | "upload"
   | "result"
+  | "wunderflow"
 
 export interface RecordingState {
   blob: Blob | null

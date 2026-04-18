@@ -18,7 +18,7 @@ export const EASE = "cubic-bezier(0.625, 0.05, 0, 1)"
 
 export const COLOR = {
   // Background
-  bg:        "#000000",   // pure black
+  bg:        "#14111a",   // matches welcome screen 3D canvas background
 
   // Accent — monochrome
   amber:     "#f0ece4",
@@ -27,13 +27,13 @@ export const COLOR = {
   tealDeep:  "#f0ece4",
 
   // Text
-  text:      "#f0ece4",   // primary body — warm near-white, high contrast
-  secondary: "#c8bad0",   // supporting text — lifted from #a89aaa
-  dim:       "#8a7890",   // inactive / captions — lifted from #6a5a70
+  text:      "#f0ece4",   // warm near-white — matches welcome screen primary
+  secondary: "#b8b4ae",   // supporting text
+  dim:       "#5a5258",   // inactive / captions
 
   // Surfaces
-  surface:   "#181420",   // subtle card / overlay surface
-  veryDim:   "#3d3248",   // inactive borders — lifted from #2a2030
+  surface:   "#130f14",   // subtle card / overlay surface
+  veryDim:   "#2e2a30",   // inactive borders
 
   // Feedback
   error:     "#d05555",
@@ -115,6 +115,29 @@ export function LanguageProvider({ lang, setLang, children }: LangCtx & { childr
 
 function useLang() { return useContext(LanguageCtx) }
 
+// ─── STEP CONTEXT ─────────────────────────────────────────────────────────────
+
+const TOTAL_STEPS = 6
+interface StepCtx { step: number }
+const StepContext = createContext<StepCtx>({ step: 0 })
+
+export function StepProvider({ step, children }: { step: number; children: React.ReactNode }) {
+  return <StepContext.Provider value={{ step }}>{children}</StepContext.Provider>
+}
+
+// ─── STEP BAR ─────────────────────────────────────────────────────────────────
+
+export function DSStepBar({ color = ACCENT }: { color?: string }) {
+  const { step } = useContext(StepContext)
+  const filled = "█".repeat(step)
+  const empty  = "░".repeat(TOTAL_STEPS - step)
+  return (
+    <div style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: OPACITY.secondary }}>
+      {String(TOTAL_STEPS).padStart(2, "0")} [{filled}{empty}] {String(step).padStart(2, "0")}
+    </div>
+  )
+}
+
 // ─── LANG SWITCHER ────────────────────────────────────────────────────────────
 
 function LangSwitcher() {
@@ -160,6 +183,57 @@ function LangSwitcher() {
         )
       })}
     </div>
+  )
+}
+
+// ─── INTERIOR BACKGROUND (shared by all inner screens) ───────────────────────
+
+const INTERIOR_GOLD = "rgba(240, 214, 140,"
+
+export function InteriorBg() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
+    resize()
+    window.addEventListener("resize", resize)
+    const dots = Array.from({ length: 60 }, () => ({
+      x: Math.random(), y: Math.random(),
+      r: 0.25 + Math.random() * 0.75,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.04 + Math.random() * 0.10,
+      base:  0.05 + Math.random() * 0.15,
+    }))
+    let raf: number
+    const draw = () => {
+      const W = canvas.width, H = canvas.height
+      ctx.clearRect(0, 0, W, H)
+      const t = Date.now() / 1000
+      dots.forEach(d => {
+        const a = d.base + Math.sin(t * d.speed + d.phase) * 0.06
+        ctx.beginPath()
+        ctx.arc(d.x * W, d.y * H, d.r, 0, Math.PI * 2)
+        ctx.fillStyle = `${INTERIOR_GOLD} ${a})`
+        ctx.fill()
+      })
+      raf = requestAnimationFrame(draw)
+    }
+    draw()
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize) }
+  }, [])
+  return (
+    <>
+      <div style={{ position: "absolute", inset: 0, background: "#14111a", zIndex: 0 }} />
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", opacity: 0.045,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        backgroundSize: "180px 180px",
+      }} />
+      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 2, pointerEvents: "none" }} />
+    </>
   )
 }
 
@@ -217,6 +291,7 @@ export function DSShell({
       style={{ background: COLOR.bg, color: COLOR.text, fontFamily: FONT.base }}
       dir={dir}
     >
+      <style>{`@keyframes ds-cursor-blink { 50% { opacity: 0; } }`}</style>
       {children}
     </div>
   )
@@ -224,12 +299,20 @@ export function DSShell({
 
 // ─── TOP BAR ─────────────────────────────────────────────────────────────────
 
-export function DSTopBar({ left, right }: { left?: React.ReactNode; right?: React.ReactNode }) {
+export function DSTopBar({ left, right, color }: { left?: React.ReactNode; right?: React.ReactNode; color?: string }) {
   return (
-    <div className="ds-safe-top relative z-10 flex items-start justify-between px-4">
-      <div>{left}</div>
-      <div>{right}</div>
-    </div>
+    <>
+      {/* Step number — fixed top-left */}
+      <div className="ds-safe-top" style={{ position: "fixed", top: 0, left: 0, zIndex: 100, paddingLeft: "1rem" }}>
+        {left ?? <DSStepBar color={color} />}
+      </div>
+      {/* Right content — fixed top-right */}
+      {right && (
+        <div className="ds-safe-top" style={{ position: "fixed", top: 0, right: 0, zIndex: 100, paddingRight: "1rem" }}>
+          {right}
+        </div>
+      )}
+    </>
   )
 }
 
@@ -238,20 +321,15 @@ export function DSTopBar({ left, right }: { left?: React.ReactNode; right?: Reac
 export function BracketEdge({ color = ACCENT, position }: { color?: string; position: "top" | "bottom" }) {
   const isTop = position === "top"
   return (
-    <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 6 }}>
-      <div style={{ flexShrink: 0 }}>
-        {isTop
-          ? <div style={{ width: 14, height: 14, borderTop: `1px solid ${color}`, borderLeft:  `1px solid ${color}`, opacity: OPACITY.secondary }} />
-          : <div style={{ width: 14, height: 14, borderBottom: `1px solid ${color}`, borderLeft:  `1px solid ${color}`, opacity: OPACITY.secondary }} />
-        }
-      </div>
-      <div style={{ flex: 1, height: 1, background: color, opacity: OPACITY.ghost }} />
-      <div style={{ flexShrink: 0 }}>
-        {isTop
-          ? <div style={{ width: 14, height: 14, borderTop: `1px solid ${color}`, borderRight: `1px solid ${color}`, opacity: OPACITY.secondary }} />
-          : <div style={{ width: 14, height: 14, borderBottom: `1px solid ${color}`, borderRight: `1px solid ${color}`, opacity: OPACITY.secondary }} />
-        }
-      </div>
+    <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {isTop
+        ? <div style={{ width: 14, height: 14, borderTop: `1px solid ${color}`, borderLeft:  `1px solid ${color}`, opacity: OPACITY.secondary }} />
+        : <div style={{ width: 14, height: 14, borderBottom: `1px solid ${color}`, borderLeft:  `1px solid ${color}`, opacity: OPACITY.secondary }} />
+      }
+      {isTop
+        ? <div style={{ width: 14, height: 14, borderTop: `1px solid ${color}`, borderRight: `1px solid ${color}`, opacity: OPACITY.secondary }} />
+        : <div style={{ width: 14, height: 14, borderBottom: `1px solid ${color}`, borderRight: `1px solid ${color}`, opacity: OPACITY.secondary }} />
+      }
     </div>
   )
 }
@@ -299,9 +377,102 @@ export function DSLabel({
       color,
       opacity,
       display:       "block",
-      textShadow:    `0 0 10px ${color}88`,
     }}>
       {children}
+    </span>
+  )
+}
+
+// ─── TYPELINE — rAF-driven, zero React re-renders per character ──────────────
+// Use this instead of TypewriterText when the parent has any CTA that fades in
+// on completion — TypewriterText re-renders the parent on every character which
+// disrupts CSS transitions on sibling elements.
+
+export function TypeLine({
+  text, speed = 18, onDone, cursorOpacity = 0.6,
+}: {
+  text: string; speed?: number; onDone?: () => void; cursorOpacity?: number
+}) {
+  const spanRef   = useRef<HTMLSpanElement>(null)
+  const cursorRef = useRef<HTMLSpanElement>(null)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
+
+  useEffect(() => {
+    const el = spanRef.current as HTMLSpanElement | null
+    if (!el) return
+    if (!text) { onDoneRef.current?.(); return }
+    const node = el
+    let idx = 0, lastTime = -1, rafId: number, cancelled = false
+    function tick(time: number) {
+      if (cancelled) return
+      if (lastTime < 0 || time - lastTime >= speed) {
+        idx++
+        node.textContent = text.slice(0, idx)
+        lastTime = time
+        if (idx >= text.length) {
+          if (cursorRef.current) cursorRef.current.style.display = "none"
+          onDoneRef.current?.()
+          return
+        }
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => { cancelled = true; cancelAnimationFrame(rafId) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <>
+      <span ref={spanRef} />
+      <span ref={cursorRef} className="ds-cursor" style={{ opacity: cursorOpacity }}>▌</span>
+    </>
+  )
+}
+
+// ─── TYPEWRITER TEXT ─────────────────────────────────────────────────────────
+
+/**
+ * Renders text character-by-character as if the vessel is speaking.
+ * Matches the animation style of screen-exhibition.
+ */
+export function TypewriterText({
+  text,
+  speed   = 28,
+  onDone,
+  style,
+}: {
+  text:    string
+  speed?:  number
+  onDone?: () => void
+  style?:  React.CSSProperties
+}) {
+  const [displayed, setDisplayed] = useState("")
+  const [done,      setDone]      = useState(false)
+  const onDoneRef = useRef(onDone)
+  useEffect(() => { onDoneRef.current = onDone })
+
+  useEffect(() => {
+    setDisplayed("")
+    setDone(false)
+    let i = 0
+    const id = setInterval(() => {
+      i++
+      setDisplayed(text.slice(0, i))
+      if (i >= text.length) {
+        clearInterval(id)
+        setDone(true)
+        onDoneRef.current?.()
+      }
+    }, speed)
+    return () => clearInterval(id)
+  }, [text, speed]) // onDone via ref — excluded to prevent restart on re-render
+
+  return (
+    <span style={style}>
+      {displayed}
+      {!done && <span style={{ animation: "ds-cursor-blink 1s step-end infinite" }}>▌</span>}
     </span>
   )
 }
@@ -317,12 +488,15 @@ export function DSButton({
   onClick,
   disabled = false,
   color    = ACCENT,
+  variant  = "solid",
 }: {
   children:  string
   onClick?:  () => void
   disabled?: boolean
   color?:    string
+  variant?:  "solid" | "outline"
 }) {
+  const isOutline = variant === "outline"
   return (
     <button
       onClick={onClick}
@@ -330,27 +504,26 @@ export function DSButton({
       style={{
         width:          "100%",
         fontFamily:     FONT.base,
-        fontSize:       TYPE.sm,
+        fontSize:       TYPE.base,
         letterSpacing:  TRACK.caps,
         textTransform:  "uppercase",
-        color:          disabled ? COLOR.secondary : COLOR.bg,
-        background:     disabled ? COLOR.veryDim   : color,
-        border:         "none",
+        color:          disabled ? COLOR.secondary : isOutline ? COLOR.text : COLOR.bg,
+        background:     disabled ? COLOR.veryDim   : isOutline ? "transparent" : color,
+        border:         isOutline ? `1px solid ${disabled ? COLOR.veryDim : COLOR.text}` : "none",
         padding:        "0 24px",
         minHeight:      56,
         display:        "flex",
         alignItems:     "center",
         justifyContent: "center",
-        gap:            8,
+        textAlign:      "center",
         fontWeight:     700,
         cursor:         disabled ? "not-allowed" : "pointer",
-        transition:     `background 0.35s ${EASE}, opacity 0.35s ${EASE}`,
+        transition:     `all 0.6s ${EASE}`,
         WebkitTapHighlightColor: "transparent",
         opacity:        disabled ? 0.55 : 1,
       }}
     >
-      <span>[ {children} ]</span>
-      {!disabled && <span className="ds-cursor" style={{ color: `${COLOR.bg}99` }}>▋</span>}
+      {children}
     </button>
   )
 }
@@ -403,24 +576,113 @@ export function SignalBar({ color = ACCENT }: { color?: string }) {
   )
 }
 
-// ─── COORDS TICKER ───────────────────────────────────────────────────────────
+// ─── RA/DEC — orbital position (welcome screen, external view) ───────────────
 
-export function CoordsTicker({ color = ACCENT }: { color?: string }) {
-  const [vals, setVals] = useState({ a: "0000.000", b: "0000.000" })
+export function RADecTicker({ color = ACCENT }: { color?: string }) {
+  const [pos,  setPos]  = useState({ ra: "04h23m", dec: "+31°14'" })
+  const [vel,  setVel]  = useState("7.614")
+
   useEffect(() => {
-    const id = setInterval(() => {
+    const posId = setInterval(() => {
       const t = Date.now() / 1000
-      setVals({
-        a: (Math.abs(Math.sin(t * 0.031) * 9999.999)).toFixed(3).padStart(8, "0"),
-        b: (Math.abs(Math.cos(t * 0.047) * 9999.999)).toFixed(3).padStart(8, "0"),
+      const raH  = Math.floor(4  + Math.sin(t * 0.00031) * 0.8)
+      const raM  = Math.floor(23 + Math.sin(t * 0.00071) * 12)
+      const decD = Math.floor(31 + Math.sin(t * 0.00047) * 8)
+      const decM = Math.floor(14 + Math.cos(t * 0.00059) * 10)
+      setPos({
+        ra:  `${String(raH).padStart(2,"0")}h${String(Math.abs(raM)).padStart(2,"0")}m`,
+        dec: `+${String(decD).padStart(2,"0")}°${String(Math.abs(decM)).padStart(2,"0")}'`,
       })
-    }, 120)
+    }, 1200)
+
+    const velId = setInterval(() => {
+      const t = Date.now() / 1000
+      const v = 7.614 + Math.sin(t * 0.13) * 0.008 + (Math.random() - 0.5) * 0.004
+      setVel(v.toFixed(3))
+    }, 180)
+
+    return () => { clearInterval(posId); clearInterval(velId) }
+  }, [])
+
+  return (
+    <div style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: OPACITY.tertiary, lineHeight: 1.8 }}>
+      <div>RA  {pos.ra}</div>
+      <div>DEC {pos.dec}</div>
+      <div>VEL {vel} km/s</div>
+    </div>
+  )
+}
+
+// ─── ALT/SIG — altitude + signature count (exhibition screen) ────────────────
+
+const TICKER_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ+·,."
+
+function useTickerScramble(text: string, trigger: number) {
+  const [display, setDisplay] = useState(text)
+  useEffect(() => {
+    const duration = 480
+    const start    = Date.now()
+    const lockAt   = text.split("").map((_, i) =>
+      (i / Math.max(text.length - 1, 1)) * duration * 0.65 + Math.random() * duration * 0.35
+    )
+    const id = setInterval(() => {
+      const elapsed = Date.now() - start
+      if (elapsed >= duration) { setDisplay(text); clearInterval(id); return }
+      setDisplay(text.split("").map((char, i) => {
+        if (char === " " || char === "," || char === ".") return char
+        if (elapsed >= lockAt[i]) return char
+        return TICKER_CHARS[Math.floor(Math.random() * TICKER_CHARS.length)]
+      }).join(""))
+    }, 38)
+    return () => clearInterval(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trigger])
+  return display
+}
+
+export function AltSigTicker({ color = ACCENT }: { color?: string }) {
+  const [slotIdx, setSlotIdx] = useState(0)
+  const [epoch,   setEpoch]   = useState(() => Math.floor(Date.now() / 1000))
+
+  useEffect(() => {
+    const id = setInterval(() => setEpoch(Math.floor(Date.now() / 1000)), 1000)
     return () => clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setSlotIdx(i => (i + 1) % 3)
+    }, 3200)
+    return () => clearInterval(id)
+  }, [])
+
+  const label = ["T+", "SIG", "F̄"][slotIdx]
+  const value = slotIdx === 0 ? epoch.toLocaleString()
+              : slotIdx === 1 ? "2,847"
+              :                 "432.0 Hz"
+  const full  = `${label}  ${value}`
+  const display = useTickerScramble(full, slotIdx)
+
   return (
-    <div style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.sm, color, opacity: OPACITY.tertiary, lineHeight: 1.8 }}>
-      <div>TX {vals.a}</div>
-      <div>RX {vals.b}</div>
+    <div style={{
+      fontFamily: FONT.mono, fontSize: TYPE.xs, letterSpacing: TRACK.sm,
+      color, opacity: OPACITY.tertiary,
+      textAlign: "right",
+      direction: "ltr",
+    }}>
+      {display}
+    </div>
+  )
+}
+
+// ─── SIG/FREQ — signatures + voice frequency (record → result) ───────────────
+
+export function SigFreqTicker({ color = ACCENT, freq, sigCount = 2847 }: { color?: string; freq?: number | null; sigCount?: number }) {
+  const freqStr = freq != null ? `${freq.toFixed(1)} Hz` : "—"
+  return (
+    <div style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: OPACITY.tertiary, lineHeight: 1.8 }}>
+      <div>SIG {sigCount.toLocaleString()}</div>
+      <div>F̄   {freqStr}</div>
     </div>
   )
 }

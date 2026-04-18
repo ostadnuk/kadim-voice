@@ -24,7 +24,17 @@
       "mcp__Claude_Preview__preview_start",
       "Bash(pkill -f \"next dev\")",
       "mcp__figma-desktop__get_screenshot",
-      "mcp__figma-desktop__get_design_context"
+      "mcp__figma-desktop__get_design_context",
+      "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
+      "Bash(npx vercel:*)",
+      "Bash(supabase --version)",
+      "Bash(ls /Users/olgastadnuk/Kadim/.env*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:nfinitepaper.com)",
+      "Bash(curl -s -X POST https://kadim-voice.vercel.app/api/upload -F 'audio=@/dev/null;type=audio/webm' -F 'meta={\"durationSec\":5,\"signaturePoints\":[],\"waveformPeaks\":[],\"sourceType\":\"remote\",\"venueId\":null,\"venueName\":null,\"country\":\"\",\"city\":\"\",\"lat\":null,\"lng\":null,\"consentVersion\":\"1.0\",\"mixOptIn\":true}')",
+      "Bash(python3 -c ':*)",
+      "Bash(ls /Users/olgastadnuk/Kadim/components/voice/screen-wonder*.tsx /Users/olgastadnuk/Kadim/lib/chladni.ts /Users/olgastadnuk/Kadim/components/voice/chladni-thumbnail.tsx /Users/olgastadnuk/Kadim/components/voice/archive-canvas.tsx /Users/olgastadnuk/Kadim/app/api/archive/collective/route.ts)",
+      "Bash(git add:*)"
     ]
   }
 }

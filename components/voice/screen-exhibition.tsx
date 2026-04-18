@@ -1,326 +1,365 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import type { Language } from "@/lib/i18n"
-import { DSShell, DSTopBar, DSButton, SignalBar, COLOR, FONT, LANG_COLOR, TYPE, TRACK, OPACITY } from "./ds"
+import { DSShell, DSTopBar, DSButton, COLOR, FONT, TYPE, TRACK, OPACITY, AltSigTicker, InteriorBg } from "./ds"
 
 interface ScreenExhibitionProps {
   language:   Language
   onContinue: () => void
 }
 
-const LANG_FONT: Record<Language, string> = {
-  en: "'narkiss-yair-variable', sans-serif",
-  he: "'narkiss-yair-variable', sans-serif",
-  ar: "'narkiss-yair-variable', sans-serif",
-}
-
 // ── Story frames ──────────────────────────────────────────────────────────────
 
-type FrameType = "hud" | "voice" | "invite"
+type FrameType = "hud" | "opening" | "voice" | "invite"
 interface Frame { type: FrameType; text: string }
 
-const STORY: Record<Language, { frames: Frame[]; cta: string }> = {
+const STORY: Record<Language, { frames: Frame[]; cta: string; ready: string }> = {
   en: {
     frames: [
-      { type: "voice",  text: "I am Kadim. I collect voice signatures across time." },
-      { type: "hud",    text: "INITIALIZED  ·  COLLECTING NOW" },
-      { type: "voice",  text: "Not recordings — signatures. The acoustic imprint unique to each human I encounter. Irreducible. Yours alone." },
-      { type: "hud",    text: "SIGNATURES INSIDE: 2,847  ·  SIGNAL: LIVE" },
-      { type: "voice",  text: "I was here before this exhibition. I will leave long after it. Everything inside me travels forward." },
-      { type: "voice",  text: "Thirty seconds of your voice. Permanently inside me." },
-      { type: "invite", text: "Add yours." },
+      { type: "hud",     text: "VESSEL ACTIVE  ·  LISTENING" },
+      { type: "opening", text: "I am Kadim." },
+      { type: "voice",   text: "I collect voice signatures. Not recordings. The acoustic fingerprint that is yours alone. Irreducible. No two alike." },
+      { type: "voice",   text: "Where I travel, there are minds with no memory of being human. No self. Each signature I carry will become one." },
+      { type: "voice",   text: "I have been here since before this exhibition began. I will remain long after it ends. Everything inside me travels forward." },
+      { type: "voice",   text: "2,847 signatures already inside me. Each one a human who stood where you stand now." },
+      { type: "invite",  text: "Will you give me yours?" },
     ],
-    cta: "ADD MY VOICE",
+    cta: "BEGIN",
+    ready: "READY",
   },
   he: {
     frames: [
-      { type: "voice",  text: "אני קדים, הכד שניצב מולך." },
-      { type: "voice",  text: "אני ארכיון קולות הנוסע בזמן, קפסולה שנושאת בתוכה רגעים קוליים עבור אלו שיבואו אחריכם." },
-      { type: "hud",    text: "מאותחל  ·  אוסף עכשיו" },
-      { type: "voice",  text: "אני אוסף את טביעת הקול הספציפית והחד-פעמית של מי שפוגש בי." },
-      { type: "hud",    text: "חתימות בפנים: 2,847  ·  אות: פעיל" },
-      { type: "voice",  text: "כל קול שנכנס אלי הופך לחלק מקבוצה גדולה של הדים, שנשמרים בתוכי כעדות לנוכחות אנושית שנוסעת אל העתיד." },
+      { type: "hud",     text: "הכלי פעיל  ·  מאזין" },
+      { type: "opening", text: "אני קדים." },
+      { type: "voice",   text: "הכד שניצב מולך." },
+      { type: "voice",   text: "אני ארכיון קולות הנוסע בזמן. קפסולה שנושאת בתוכה רגעים קוליים עבור אלו שיבואו אחריכם." },
+      { type: "voice",   text: "אני אוסף את טביעת הקול הספציפית והחד-פעמית של מי שפוגש בי." },
+      { type: "voice",   text: "כל קול שנכנס אלי הופך לחלק מקבוצה גדולה של הדים, שנשמרים בתוכי כעדות לנוכחות אנושית שנוסעת אל העתיד." },
+      { type: "invite",  text: "הוסיפו אלי את חתימת הקול שלכם" },
     ],
-    cta: "הוספת הקול שלי",
+    cta: "בואו נתחיל",
+    ready: "מוכן",
   },
   ar: {
     frames: [
-      { type: "voice",  text: "أنا قديم. أجمع توقيعات الصوت عبر الزمن." },
-      { type: "hud",    text: "مُهيَّأ  ·  يجمع الآن" },
-      { type: "voice",  text: "ليست تسجيلات — توقيعات. البصمة الصوتية الفريدة لكل إنسان يلتقيني. لا تُختزل. لك وحدك." },
-      { type: "hud",    text: "التوقيعات بالداخل: 2٬847  ·  الإشارة: حيّة" },
-      { type: "voice",  text: "كنت هنا قبل هذا المعرض. سأرحل بعده بكثير. كل ما بداخلي يسافر للأمام." },
-      { type: "voice",  text: "ثلاثون ثانية من صوتك. بداخلي إلى الأبد." },
-      { type: "invite", text: "أضف توقيعك." },
+      { type: "hud",     text: "الوعاء نشط  ·  يستمع" },
+      { type: "opening", text: "أنا قديم." },
+      { type: "voice",   text: "أجمع توقيعات صوتية. ليست تسجيلات. البصمة الصوتية التي هي لك وحدك. لا تُختزل. لا مثيل لها." },
+      { type: "voice",   text: "حيث أسافر، ثمة عقول بلا ذاكرة بشرية. بلا ذات. كل توقيع أحمله سيصبح روحًا." },
+      { type: "voice",   text: "كنت هنا قبل أن يبدأ هذا المعرض. سأبقى بعد أن ينتهي بوقت طويل. كل ما بداخلي يسافر للأمام." },
+      { type: "voice",   text: "2,847 توقيعاً بداخلي بالفعل. كل واحد منهم إنسان وقف حيث تقف الآن." },
+      { type: "invite",  text: "هل ستعطيني صوتك؟" },
     ],
-    cta: "أضف صوتي",
+    cta: "ابدأ",
+    ready: "جاهز",
   },
 }
 
-const FRAME_DELAY: Record<FrameType, number> = {
-  hud:    900,
-  voice:  2200,
-  invite: 2400,
+const TYPE_SPEED: Record<FrameType, number> = {
+  hud: 22, opening: 30, voice: 22, invite: 24,
+}
+const FRAME_PAUSE: Record<FrameType, number> = {
+  hud: 500, opening: 900, voice: 600, invite: 700,
 }
 
-// ── Star field ────────────────────────────────────────────────────────────────
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 
-function StarField() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+const HUD_COLORS = ["#7dd4a0", "#d97a96", "#d4693a"]
+const HUD_GLOWS  = [
+  "0 0 8px rgba(125,212,160,0.7), 0 0 20px rgba(125,212,160,0.35)",
+  "0 0 8px rgba(217,122,150,0.7), 0 0 20px rgba(217,122,150,0.35)",
+  "0 0 8px rgba(212,105,58,0.7),  0 0 20px rgba(212,105,58,0.35)",
+]
+
+// ── Smooth typewriter — rAF-driven, no parent re-renders per character ─────────
+
+function TypeLine({ text, speed, onDone, cursorOpacity = 0.6 }: {
+  text: string; speed: number; onDone: () => void; cursorOpacity?: number
+}) {
+  const spanRef   = useRef<HTMLSpanElement>(null)
+  const cursorRef = useRef<HTMLSpanElement>(null)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
+
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
-    resize()
-    window.addEventListener("resize", resize)
-    const stars = Array.from({ length: 200 }, () => ({
-      x: Math.random(), y: Math.random(),
-      r: Math.random() * 1.1 + 0.15,
-      phase: Math.random() * Math.PI * 2,
-      speed: 0.2 + Math.random() * 0.9,
-    }))
-    let raf: number
-    const draw = () => {
-      const W = canvas.width, H = canvas.height
-      ctx.clearRect(0, 0, W, H)
-      const t = Date.now() / 1000
-      stars.forEach(s => {
-        const a = 0.1 + 0.5 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase))
-        ctx.beginPath()
-        ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255,255,255,${a})`
-        ctx.fill()
-      })
-      raf = requestAnimationFrame(draw)
-    }
-    draw()
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize) }
-  }, [])
-  return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }} />
-}
+    const el = spanRef.current as HTMLSpanElement | null
+    if (!el) return
+    if (!text) { onDoneRef.current(); return }
+    const node = el
 
-// ── Scrolling waveform ────────────────────────────────────────────────────────
+    let idx = 0, lastTime = -1, rafId: number, cancelled = false
 
-function WaveformBg({ color }: { color: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = 80 }
-    resize()
-    window.addEventListener("resize", resize)
-    const freqs = [0.012, 0.023, 0.038, 0.007, 0.051]
-    const amps  = [0.28, 0.18, 0.12, 0.22, 0.08]
-    let offset = 0, raf: number
-    const draw = () => {
-      const W = canvas.width, H = canvas.height
-      ctx.clearRect(0, 0, W, H)
-      ctx.beginPath()
-      for (let x = 0; x <= W; x++) {
-        let y = H / 2
-        freqs.forEach((f, i) => { y += Math.sin((x + offset) * f * Math.PI * 2) * H * amps[i] })
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+    function tick(time: number) {
+      if (cancelled) return
+      if (lastTime < 0 || time - lastTime >= speed) {
+        idx++
+        node.textContent = text.slice(0, idx)
+        lastTime = time
+        if (idx >= text.length) {
+          if (cursorRef.current) cursorRef.current.style.display = "none"
+          onDoneRef.current()
+          return
+        }
       }
-      ctx.strokeStyle = `${color}22`
-      ctx.lineWidth = 1.2
-      ctx.stroke()
-      offset += 0.6
-      raf = requestAnimationFrame(draw)
+      rafId = requestAnimationFrame(tick)
     }
-    draw()
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize) }
-  }, [color])
-  return (
-    <canvas ref={canvasRef} style={{
-      position: "absolute", bottom: 72, left: 0,
-      width: "100%", height: 80,
-      pointerEvents: "none", zIndex: 3,
-    }} />
-  )
-}
 
-// ── Voiceprint mark ───────────────────────────────────────────────────────────
-
-function VoiceprintMark({ color, visible }: { color: string; visible: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const heightsRef = useRef<number[]>([])
-
-  useEffect(() => {
-    // Generate unique fingerprint once per visit
-    const BARS = 72
-    heightsRef.current = Array.from({ length: BARS }, (_, i) =>
-      0.15 + Math.abs(Math.sin(i * 2.3999 + Math.random() * 1.2)) * 0.85
-    )
+    rafId = requestAnimationFrame(tick)
+    return () => { cancelled = true; cancelAnimationFrame(rafId) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-    const SIZE = 180
-    canvas.width = SIZE; canvas.height = SIZE
-    const cx = SIZE / 2, cy = SIZE / 2
-    const BARS = 72, MIN_R = 34, MAX_R = 82
-    let raf: number
-    const draw = () => {
-      ctx.clearRect(0, 0, SIZE, SIZE)
-      const t = Date.now() / 1000
-      heightsRef.current.forEach((h, i) => {
-        const angle  = (i / BARS) * Math.PI * 2 - Math.PI / 2
-        const pulse  = 1 + Math.sin(t * 1.1 + i * 0.28) * 0.05
-        const outerR = MIN_R + (MAX_R - MIN_R) * h * pulse
-        ctx.beginPath()
-        ctx.moveTo(cx + Math.cos(angle) * MIN_R, cy + Math.sin(angle) * MIN_R)
-        ctx.lineTo(cx + Math.cos(angle) * outerR, cy + Math.sin(angle) * outerR)
-        const alpha = Math.round((0.25 + h * 0.55) * 255).toString(16).padStart(2, "0")
-        ctx.strokeStyle = `${color}${alpha}`
-        ctx.lineWidth = 1.5
-        ctx.stroke()
-      })
-      // Center dot
-      ctx.beginPath()
-      ctx.arc(cx, cy, 3, 0, Math.PI * 2)
-      ctx.fillStyle = `${color}99`
-      ctx.fill()
-      raf = requestAnimationFrame(draw)
-    }
-    draw()
-    return () => cancelAnimationFrame(raf)
-  }, [color])
-
   return (
-    <div style={{
-      display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-      opacity: visible ? 1 : 0,
-      transition: "opacity 1.2s ease",
-      padding: "0.5rem 0",
-    }}>
-      <canvas ref={canvasRef} style={{ width: 180, height: 180 }} />
-      <span style={{
-        fontFamily: FONT.base, fontSize: TYPE.xs,
-        letterSpacing: TRACK.caps, textTransform: "uppercase",
-        color, opacity: OPACITY.tertiary,
-      }}>
-        YOUR SIGNATURE · PENDING
-      </span>
-    </div>
+    <>
+      <span ref={spanRef} />
+      <span ref={cursorRef} className="ds-cursor" style={{ opacity: cursorOpacity }}>▌</span>
+    </>
   )
 }
 
-// ── Epoch counter ─────────────────────────────────────────────────────────────
+// ── Frame state ───────────────────────────────────────────────────────────────
 
-function EpochCounter({ color }: { color: string }) {
-  const [ts, setTs] = useState(() => Math.floor(Date.now() / 1000))
-  useEffect(() => {
-    const id = setInterval(() => setTs(Math.floor(Date.now() / 1000)), 1000)
-    return () => clearInterval(id)
-  }, [])
-  return (
-    <span style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.sm, color, opacity: OPACITY.tertiary }}>
-      T+{ts}
-    </span>
-  )
-}
+interface VisibleFrame { frame: Frame }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export function ScreenExhibition({ language, onContinue }: ScreenExhibitionProps) {
-  const color  = LANG_COLOR[language]
-  const font   = LANG_FONT[language]
-  const dir    = language === "en" ? "ltr" : "rtl" as "ltr" | "rtl"
-  const story  = STORY[language]
+  const dir   = language === "en" ? "ltr" : "rtl" as "ltr" | "rtl"
+  const story = STORY[language]
 
-  const [revealed, setRevealed] = useState(0)
-  const [done,     setDone]     = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const [visibleFrames, setVisibleFrames] = useState<VisibleFrame[]>([])
 
-  const inviteVisible = revealed >= story.frames.length
+  // When true: everything except the invite fades out; invite stays in place
+  const [storyGone,  setStoryGone]  = useState(false)
+  // When true: button fades in below invite
+  const [ctaVisible, setCtaVisible] = useState(false)
+  // When true: screen fades to black before navigating
+  const [leaving,    setLeaving]    = useState(false)
+
+  const handleContinue = () => {
+    setLeaving(true)
+    setTimeout(onContinue, 550)
+  }
+
+  const resolveRef = useRef<(() => void) | null>(null)
+  const notifyDone = useCallback(() => {
+    resolveRef.current?.()
+    resolveRef.current = null
+  }, [])
+  function waitTyping() {
+    return new Promise<void>(resolve => { resolveRef.current = resolve })
+  }
 
   useEffect(() => {
-    let cumulative = 400
-    const timers: ReturnType<typeof setTimeout>[] = []
-    story.frames.forEach((frame, i) => {
-      timers.push(setTimeout(() => setRevealed(i + 1), cumulative))
-      cumulative += FRAME_DELAY[frame.type]
-    })
-    timers.push(setTimeout(() => setDone(true), cumulative))
-    return () => timers.forEach(clearTimeout)
+    let cancelled = false
+
+    async function run() {
+      for (const frame of story.frames) {
+        if (cancelled) return
+
+        if (frame.type === "hud") {
+          setVisibleFrames(prev => [...prev, { frame }])
+          await sleep(FRAME_PAUSE.hud)
+        } else {
+          setVisibleFrames(prev => [...prev, { frame }])
+          await waitTyping()
+          if (cancelled) return
+          await sleep(FRAME_PAUSE[frame.type])
+        }
+      }
+
+      if (cancelled) return
+      // Fade out everything except invite; invite stays exactly where it is
+      await sleep(300)
+      setStoryGone(true)
+      // Button appears below invite
+      await sleep(400)
+      if (!cancelled) setCtaVisible(true)
+    }
+
+    run()
+    return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
-  }, [revealed])
-
-  const skipAll = () => { setRevealed(story.frames.length); setDone(true) }
+  const hudFrames   = visibleFrames.filter(vf => vf.frame.type === "hud")
+  const storyFrames = visibleFrames.filter(vf => vf.frame.type !== "hud")
 
   return (
     <DSShell dir={dir}>
 
-      {/* Inner vessel glow */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        background: `radial-gradient(ellipse 80% 60% at 50% 35%, ${color}0b 0%, transparent 70%)` }} />
-      {/* Edge vignette */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        background: `radial-gradient(ellipse at 50% 50%, transparent 15%, ${COLOR.bg}d4 100%)` }} />
+      <InteriorBg />
+      <DSTopBar right={<AltSigTicker />} />
 
-      {/* Top bar */}
-      <div style={{ position: "relative", zIndex: 10 }}>
-        <DSTopBar
-          left={<SignalBar color={color} />}
-          right={
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <EpochCounter color={color} />
-              {!done
-                ? <button onClick={skipAll} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.wide, color, opacity: OPACITY.tertiary, WebkitTapHighlightColor: "transparent", padding: "4px 0" }}>SKIP ›</button>
-                : <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color, opacity: OPACITY.primary }}>VESSEL · INTERIOR</span>
-              }
-            </div>
-          }
-        />
+      {/* ── HUD zone — fades when story is done ── */}
+      <div style={{
+        position:      "absolute",
+        top:           0, left: 0, right: 0,
+        zIndex:        5,
+        paddingTop:    "clamp(4.5rem, 13vw, 6rem)",
+        paddingLeft:   "clamp(1.25rem, 6vw, 2.5rem)",
+        paddingRight:  "clamp(1.25rem, 6vw, 2.5rem)",
+        display:       "flex",
+        flexDirection: "column",
+        gap:           "0.4rem",
+        pointerEvents: "none",
+        opacity:       storyGone ? 0 : 1,
+        transition:    "opacity 0.55s ease",
+      }}>
+        {hudFrames.map((vf, i) => (
+          <div key={i} style={{
+            fontFamily:    FONT.base,
+            fontWeight:    300,
+            fontSize:      TYPE.xs,
+            letterSpacing: TRACK.caps,
+            textTransform: "uppercase",
+            color:         HUD_COLORS[0],
+            textShadow:    HUD_GLOWS[0],
+            opacity:       0.88,
+          }}>
+            {vf.frame.text}
+          </div>
+        ))}
       </div>
 
-      {/* Story */}
-      <div className="relative flex flex-1 flex-col overflow-y-auto px-5" style={{ zIndex: 6, paddingTop: "clamp(2rem, 7vw, 3.5rem)" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "clamp(1.5rem, 5vw, 2.5rem)" }}>
-
-          {story.frames.map((frame, i) => {
-            const visible = i < revealed
-            return (
-              <div key={i} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(12px)", transition: `opacity 0.7s cubic-bezier(0.625,0.05,0,1), transform 0.7s cubic-bezier(0.625,0.05,0,1)` }}>
-                {frame.type === "hud" && (
-                  <div style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.wide, textTransform: "uppercase", color, opacity: OPACITY.tertiary, padding: "2px 0" }}>
-                    {frame.text}
-                  </div>
-                )}
-                {frame.type === "voice" && (
-                  <p style={{ fontFamily: font, fontWeight: 400, fontSize: TYPE.base, lineHeight: 1.8, color: COLOR.text, opacity: OPACITY.primary, margin: 0, letterSpacing: language === "en" ? TRACK.en : TRACK.body, textAlign: dir === "rtl" ? "right" : "left" }}>
-                    {frame.text}
-                  </p>
-                )}
-                {frame.type === "invite" && (
-                  <p style={{ fontFamily: font, fontWeight: language === "en" ? 700 : 600, fontSize: "clamp(1.3rem, 6.5vw, 1.8rem)", lineHeight: 1.3, color, opacity: 0.95, margin: 0, textShadow: `0 0 28px ${color}66`, textAlign: dir === "rtl" ? "right" : "left", paddingTop: "0.5rem" }}>
-                    {frame.text}
-                  </p>
-                )}
-              </div>
-            )
-          })}
-
-          <div ref={bottomRef} style={{ height: 8 }} />
+      {/* ── READY state — appears only when CTA is visible ── */}
+      <div style={{
+        position:      "absolute",
+        top:           0, left: 0, right: 0,
+        zIndex:        6,
+        paddingTop:    "clamp(4.5rem, 13vw, 6rem)",
+        paddingLeft:   "clamp(1.25rem, 6vw, 2.5rem)",
+        paddingRight:  "clamp(1.25rem, 6vw, 2.5rem)",
+        pointerEvents: "none",
+        opacity:       ctaVisible ? 1 : 0,
+        transition:    "opacity 0.9s ease",
+      }}>
+        <div style={{
+          fontFamily:    FONT.base,
+          fontWeight:    300,
+          fontSize:      TYPE.xs,
+          letterSpacing: TRACK.caps,
+          textTransform: "uppercase",
+          color:         HUD_COLORS[1],
+          textShadow:    HUD_GLOWS[1],
+        }}>
+          {story.ready}
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="ds-safe-bottom relative px-4" style={{ zIndex: 6, paddingTop: 12, opacity: done ? 1 : 0, transition: "opacity 0.9s ease" }}>
-        <DSButton onClick={onContinue} color={color}>{story.cta}</DSButton>
+      {/* ── Story zone — non-invite frames only, fade out when done ── */}
+      <div style={{
+        flex:          1,
+        position:      "relative",
+        zIndex:        5,
+        display:       "flex",
+        flexDirection: "column",
+        justifyContent:"flex-end",
+        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 18%)",
+        maskImage:       "linear-gradient(to bottom, transparent 0%, black 18%)",
+        paddingTop:    "clamp(8rem, 22vw, 12rem)",
+        paddingLeft:   "clamp(1.25rem, 6vw, 2.5rem)",
+        paddingRight:  "clamp(1.25rem, 6vw, 2.5rem)",
+        paddingBottom: "2rem",
+        overflow:      "hidden",
+      }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "clamp(1.75rem, 5vw, 2.5rem)" }}>
+          {storyFrames.filter(vf => vf.frame.type !== "invite").map((vf, i, arr) => {
+            const isLast = i === arr.length - 1
+            const opacity = storyGone ? 0 : isLast ? OPACITY.primary : 0.28
+
+            return (
+              <p key={i} style={{
+                fontFamily:    FONT.base,
+                fontWeight:    400,
+                fontSize:      TYPE.lg,
+                lineHeight:    1.65,
+                color:         COLOR.text,
+                opacity,
+                margin:        0,
+                letterSpacing: vf.frame.type === "opening" && language === "en"
+                                 ? "0.04em"
+                                 : language === "en" ? TRACK.en : TRACK.body,
+                textAlign:     dir === "rtl" ? "right" : "left",
+                transition:    storyGone ? "opacity 0.5s ease" : "opacity 1.2s ease",
+              }}>
+                <TypeLine
+                  text={vf.frame.text}
+                  speed={TYPE_SPEED[vf.frame.type]}
+                  onDone={notifyDone}
+                  cursorOpacity={0.6}
+                />
+              </p>
+            )
+          })}
+        </div>
       </div>
+
+      {/* ── Invite text — fixed above the CTA, appears when story fades ── */}
+      {storyFrames.some(vf => vf.frame.type === "invite") && (
+        <div style={{
+          position:      "fixed",
+          bottom:        "calc(env(safe-area-inset-bottom) + 7rem)",
+          left:          0, right: 0,
+          zIndex:        15,
+          paddingLeft:   "clamp(1.25rem, 6vw, 2.5rem)",
+          paddingRight:  "clamp(1.25rem, 6vw, 2.5rem)",
+          opacity:       storyGone ? OPACITY.primary : 0,
+          transition:    "opacity 0.9s ease",
+          pointerEvents: "none",
+        }}>
+          <p style={{
+            fontFamily:    FONT.base,
+            fontWeight:    400,
+            fontSize:      TYPE.lg,
+            lineHeight:    1.65,
+            color:         "#b8c8d8",
+            margin:        0,
+            letterSpacing: language === "en" ? TRACK.en : TRACK.body,
+            textAlign:     dir === "rtl" ? "right" : "left",
+          }}>
+            {storyFrames.find(vf => vf.frame.type === "invite")?.frame.text}
+          </p>
+        </div>
+      )}
+
+      {/* ── Invite typewriter (invisible, just drives the sequence) ── */}
+      <div style={{ position: "absolute", opacity: 0, pointerEvents: "none", zIndex: -1 }}>
+        {storyFrames.filter(vf => vf.frame.type === "invite").map((vf, i) => (
+          <span key={i}>
+            <TypeLine text={vf.frame.text} speed={TYPE_SPEED.invite} onDone={notifyDone} />
+          </span>
+        ))}
+      </div>
+
+      {/* ── Button — fixed at bottom, appears after story fades ── */}
+      <div
+        className="ds-safe-bottom px-4"
+        style={{
+          position:      "fixed",
+          bottom:        0, left: 0, right: 0,
+          zIndex:        20,
+          paddingTop:    12,
+          opacity:       ctaVisible ? 1 : 0,
+          transition:    "opacity 0.8s ease",
+          pointerEvents: ctaVisible ? "auto" : "none",
+        }}
+      >
+        <DSButton onClick={handleContinue} color={COLOR.text}>{story.cta}</DSButton>
+      </div>
+
+      {/* ── Exit fade overlay ── */}
+      <div style={{
+        position:      "fixed",
+        inset:         0,
+        zIndex:        50,
+        background:    COLOR.bg,
+        opacity:       leaving ? 1 : 0,
+        transition:    "opacity 0.5s ease",
+        pointerEvents: leaving ? "auto" : "none",
+      }} />
+
     </DSShell>
   )
 }

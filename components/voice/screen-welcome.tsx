@@ -1,22 +1,23 @@
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
+import type { Language } from "@/lib/i18n"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { useGLTF, Environment, Stars } from "@react-three/drei"
 import * as THREE from "three"
-import { COLOR, FONT, TYPE, TRACK, OPACITY, TOUCH_MIN } from "./ds"
+import { COLOR, FONT, TYPE, TRACK, OPACITY, DSStepBar, StepProvider, RADecTicker } from "./ds"
 
 interface ScreenWelcomeProps {
   onContinue: () => void
 }
 
-const TITLES: { lang: Language; title: string; sub: string; cta: string; dir: string; color: string; glow: string; font: string; weight: number }[] = [
-  { lang: "en", title: "KADIM", sub: "VOICE SIGNATURES ARCHIVE", cta: "ENTER ARCHIVE",    dir: "ltr", color: "#f0ece4", glow: "rgba(240,236,228,0.45)", font: "'narkiss-yair-variable'", weight: 700 },
-  { lang: "he", title: "קדים",  sub: "ארכיון חתימות קול",         cta: "כניסה לארכיון",  dir: "rtl", color: "#f0ece4", glow: "rgba(240,236,228,0.45)",   font: "'narkiss-yair-variable'",  weight: 700 },
-  { lang: "ar", title: "قديم",  sub: "أرشيف توقيعات الصوت",       cta: "ادخل الأرشيف",   dir: "rtl", color: "#f0ece4", glow: "rgba(240,236,228,0.45)",    font: "'narkiss-yair-variable'",  weight: 700 },
+const TITLES: { lang: Language; title: string; sub: string; cta: string; welcome: string; drag: string; titleSize: string; dir: string; color: string; glow: string; font: string; weight: number }[] = [
+  { lang: "en", title: "KADIM", sub: "VOICE SIGNATURES ARCHIVE", cta: "ENTER",   welcome: "— WELCOME TO —",  drag: "drag to explore",   titleSize: "clamp(3.5rem, 19vw, 8rem)",  dir: "ltr", color: "#f0ece4", glow: "rgba(240,236,228,0.45)", font: "'narkiss-yair-variable'", weight: 700 },
+  { lang: "he", title: "קדים",  sub: "ארכיון חתימות קול",        cta: "כניסה",   welcome: "— ברוכים הבאים —", drag: "גרור לחקירה",        titleSize: "clamp(4.5rem, 24vw, 10rem)", dir: "rtl", color: "#f0ece4", glow: "rgba(240,236,228,0.45)", font: "'narkiss-yair-variable'", weight: 700 },
+  { lang: "ar", title: "قديم",  sub: "أرشيف توقيعات الصوت",      cta: "دخول",    welcome: "— مرحباً بك —",    drag: "اسحب للاستكشاف",    titleSize: "clamp(3.8rem, 21vw, 8.5rem)", dir: "rtl", color: "#f0ece4", glow: "rgba(240,236,228,0.45)", font: "'narkiss-yair-variable'", weight: 700 },
 ]
 
-const SCRAMBLE_CHARS = "░▒▓▄▀◆◇▪□▸⊗⊕01!><∷⋯"
+const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ אבגדהוזחטיכלמנסעפצ قدمأبتثجح0123456789"
 
 function useScramble(text: string, trigger: number) {
   const [display, setDisplay] = useState(text)
@@ -123,7 +124,7 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
   return (
     <div
       className="relative flex min-h-[100dvh] select-none flex-col overflow-hidden"
-      style={{ background: "#0d0b0e" }}
+      style={{ background: "#14111a" }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -160,41 +161,28 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
         style={{ opacity: visible ? 1 : 0, transition: "opacity 1s ease" }}
       >
 
-        {/* TOP ROW — corner info */}
-        <div className="ds-safe-top flex items-start justify-between px-4">
-          {/* top-left: signal */}
-          <div style={{ transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)' }}>
-            <SignalBar color={current.color} />
-          </div>
-          {/* top-right: lang selector — tap to lock */}
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        {/* TOP ROW — step (fixed) + lang */}
+        <div style={{ position: "fixed", top: 0, left: 0, zIndex: 100, padding: "max(1.25rem, calc(env(safe-area-inset-top) + 0.5rem)) 0 0 1rem" }}>
+          <StepProvider step={0}><DSStepBar color={current.color} /></StepProvider>
+        </div>
+        <div className="ds-safe-top flex items-center justify-end px-4">
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {TITLES.map((t, i) => {
               const isActive = i === langIdx
               return (
                 <button
                   key={i}
-                  onClick={() => {
-                    setLangIdx(i)
-                    setScramble(n => n + 1)
-                    setLocked(true)
-                  }}
+                  onClick={() => { setLangIdx(i); setScramble(n => n + 1); setLocked(true) }}
                   aria-pressed={isActive}
                   style={{
-                    background:  isActive ? t.color : "transparent",
-                    border:      `1px solid ${isActive ? t.color : COLOR.veryDim}`,
-                    padding:     "0 10px",
-                    minHeight:   TOUCH_MIN,
-                    minWidth:    TOUCH_MIN,
-                    cursor:      "pointer",
-                    fontFamily:  FONT.base,
-                    fontSize:    TYPE.xs,
-                    letterSpacing: TRACK.caps,
-                    color:       isActive ? COLOR.bg : COLOR.dim,
-                    transition:  "all .3s",
+                    background: "none", border: "none", padding: "0",
+                    minHeight: "auto", minWidth: "auto", cursor: "pointer",
+                    fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps,
+                    color: current.color,
+                    opacity: isActive ? OPACITY.secondary : OPACITY.ghost,
+                    transition: "opacity 0.3s",
                     WebkitTapHighlightColor: "transparent",
-                    display:     "flex",
-                    alignItems:  "center",
-                    justifyContent: "center",
+                    display: "flex", alignItems: "center",
                   }}
                 >
                   {["EN","HE","AR"][i]}
@@ -204,75 +192,62 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
           </div>
         </div>
 
-        {/* MIDDLE — hero title block (opacity driven by RAF depth loop) */}
+        {/* CENTER — title block, vertically centered */}
         <div ref={titleBlockRef} className="flex flex-1 flex-col items-center justify-center px-4">
 
-          {/* bracket top edge */}
           <BracketEdge color={current.color} position="top" />
 
-          <div className="flex flex-col items-center gap-2 py-4" dir={current.dir}>
+          <div className="flex flex-col items-center gap-2 py-4" dir={current.dir} style={{ minHeight: "clamp(12rem, 38vw, 18rem)", justifyContent: "center" }}>
 
-            {/* tiny label above */}
             <span style={{
               fontFamily: FONT.base, fontSize: TYPE.xs,
               letterSpacing: TRACK.caps, textTransform: "uppercase",
-              color: current.color, opacity: OPACITY.secondary, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)',
+              color: current.color, opacity: OPACITY.secondary,
+              transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)',
             }}>
-              — WELCOME TO —
+              {current.welcome}
             </span>
 
             {/* MAIN TITLE — prismatic chromatic aberration */}
             <style>{`
               @keyframes prism {
-                0%,100% { transform: translateX(0);   opacity: 0; }
-                10%      { opacity: 0.28; }
-                50%      { transform: translateX(var(--px)); opacity: 0.22; }
-                90%      { opacity: 0; }
+                0%, 85%, 100% { transform: translateX(0); opacity: 0; }
+                86%  { transform: translateX(var(--px)); opacity: 0.55; }
+                87%  { transform: translateX(0);         opacity: 0;    }
+                88%  { transform: translateX(var(--px)); opacity: 0.35; }
+                89%  { opacity: 0; }
               }
-              .prism-c { animation: prism 6s cubic-bezier(0.625,0.05,0,1) infinite;       --px: -3px; }
-              .prism-r { animation: prism 6s cubic-bezier(0.625,0.05,0,1) infinite 0.06s; --px:  3px; }
+              .prism-c { animation: prism 7s steps(1, end) infinite;        --px: -4px; }
+              .prism-r { animation: prism 7s steps(1, end) infinite 0.05s;  --px:  4px; }
             `}</style>
             <div style={{ position: "relative", lineHeight: 0.88 }}>
-              {/* cyan — shifts left */}
               <span className="prism-c" style={{
                 position: "absolute", inset: 0,
                 fontFamily: current.font, fontWeight: current.weight,
-                fontSize: "clamp(4rem, 22vw, 9rem)",
-                letterSpacing: "0.06em", color: "#00eeff",
+                fontSize: current.titleSize,
+                letterSpacing: "0.02em", color: "#7ecfea",
                 mixBlendMode: "screen", whiteSpace: "nowrap",
                 pointerEvents: "none",
-              }}>
-                {titleDisplay}
-              </span>
-              {/* red — shifts right */}
+              }}>{titleDisplay}</span>
               <span className="prism-r" style={{
                 position: "absolute", inset: 0,
                 fontFamily: current.font, fontWeight: current.weight,
-                fontSize: "clamp(4rem, 22vw, 9rem)",
-                letterSpacing: "0.06em", color: "#ff2060",
+                fontSize: current.titleSize,
+                letterSpacing: "0.02em", color: "#c8960c",
                 mixBlendMode: "screen", whiteSpace: "nowrap",
                 pointerEvents: "none",
-              }}>
-                {titleDisplay}
-              </span>
-              {/* real text — white, no glow */}
+              }}>{titleDisplay}</span>
               <span style={{
                 position: "relative",
                 fontFamily: current.font, fontWeight: current.weight,
-                fontSize: "clamp(4rem, 22vw, 9rem)",
-                letterSpacing: "0.06em",
+                fontSize: current.titleSize,
+                letterSpacing: "0.02em",
                 color: "#ffffff",
                 whiteSpace: "nowrap",
                 display: "block",
-              }}>
-                {titleDisplay}
-              </span>
+              }}>{titleDisplay}</span>
             </div>
 
-            {/* divider line */}
-            <div style={{ width: "100%", height: 1, background: current.color, opacity: 0.2 }} />
-
-            {/* subtitle — no glow */}
             <span style={{
               fontFamily: FONT.base, fontWeight: 400,
               fontSize: TYPE.sm,
@@ -283,30 +258,19 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
             </span>
           </div>
 
-          {/* bracket bottom edge */}
           <BracketEdge color={current.color} position="bottom" />
         </div>
 
-        {/* BOTTOM — coords row + full-width CTA */}
-        <div className="ds-safe-bottom flex flex-col gap-2 px-4">
-          {/* mini info row */}
-          <div className="flex items-end justify-between">
-            <CoordsTicker color={current.color} />
-            <span style={{
-              fontFamily: FONT.base, fontSize: TYPE.hud,
-              letterSpacing: TRACK.sm, color: current.color,
-              opacity: OPACITY.tertiary, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)',
-            }}>
-              drag to explore
-            </span>
-          </div>
+        {/* BOTTOM PANEL — RA/DEC + CTA */}
+        <div className="ds-safe-bottom flex flex-col px-4 pt-2" style={{ gap: 12 }}>
+          <RADecTicker color={current.color} />
 
-          {/* full-width enter button — text updates with selected language */}
+          {/* CTA */}
           <button
             onClick={handleEnter}
             style={{
               width: "100%",
-              fontFamily: current.font, fontSize: TYPE.sm,
+              fontFamily: current.font, fontSize: TYPE.base,
               letterSpacing: current.lang === "en" ? TRACK.caps : TRACK.sm,
               textTransform: current.lang === "en" ? "uppercase" : "none",
               color: COLOR.bg,
@@ -314,15 +278,14 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
               border: "none",
               padding: "0 24px",
               minHeight: 56,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              display: "flex", alignItems: "center", justifyContent: "center",
               transition: 'background 0.6s cubic-bezier(0.625,0.05,0,1)',
               WebkitTapHighlightColor: "transparent",
               fontWeight: current.weight,
               direction: current.dir as "ltr" | "rtl",
             }}
           >
-            <span>{current.cta}</span>
-            <span className="ds-cursor" style={{ color: `${COLOR.bg}99` }}>▋</span>
+            {current.cta}
           </button>
         </div>
       </div>
@@ -344,64 +307,15 @@ export function ScreenWelcome({ onContinue }: ScreenWelcomeProps) {
 function BracketEdge({ color, position }: { color: string; position: "top" | "bottom" }) {
   const isTop = position === "top"
   return (
-    <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)' }}>
-      {/* left bracket arm */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 0 }}>
-        {isTop
-          ? <div style={{ width: 14, height: 14, borderTop: `1px solid ${color}`, borderLeft: `1px solid ${color}`, opacity: .6 }} />
-          : <div style={{ width: 14, height: 14, borderBottom: `1px solid ${color}`, borderLeft: `1px solid ${color}`, opacity: .6 }} />
-        }
-      </div>
-      {/* line */}
-      <div style={{ flex: 1, height: 1, background: color, opacity: .12 }} />
-      {/* right bracket arm */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
-        {isTop
-          ? <div style={{ width: 14, height: 14, borderTop: `1px solid ${color}`, borderRight: `1px solid ${color}`, opacity: .6 }} />
-          : <div style={{ width: 14, height: 14, borderBottom: `1px solid ${color}`, borderRight: `1px solid ${color}`, opacity: .6 }} />
-        }
-      </div>
-    </div>
-  )
-}
-
-// ── Signal bar ────────────────────────────────────────────────────────────────
-function SignalBar({ color }: { color: string }) {
-  const [sig, setSig] = useState(7)
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSig(Math.round(4 + Math.sin(Date.now() / 1000 * 0.08) * 3))
-    }, 200)
-    return () => clearInterval(id)
-  }, [])
-  return (
-    <div style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color, opacity: OPACITY.secondary, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)' }}>
-      SIG [{("█".repeat(sig) + "░".repeat(10 - sig))}]
-    </div>
-  )
-}
-
-// ── Live coordinates ──────────────────────────────────────────────────────────
-function CoordsTicker({ color }: { color: string }) {
-  const [vals, setVals] = useState({ a: "0000.000", b: "0000.000" })
-  useEffect(() => {
-    const id = setInterval(() => {
-      const t = Date.now() / 1000
-      setVals({
-        a: (Math.abs(Math.sin(t * 0.031) * 9999.999)).toFixed(3).padStart(8, "0"),
-        b: (Math.abs(Math.cos(t * 0.047) * 9999.999)).toFixed(3).padStart(8, "0"),
-      })
-    }, 120)
-    return () => clearInterval(id)
-  }, [])
-  return (
-    <div style={{
-      fontFamily: FONT.base, fontSize: TYPE.hud,
-      letterSpacing: TRACK.sm, color, opacity: OPACITY.tertiary,
-      lineHeight: 1.8, transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)',
-    }}>
-      <div>TX {vals.a}</div>
-      <div>RX {vals.b}</div>
+    <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", transition: 'color 0.6s cubic-bezier(0.625,0.05,0,1)' }}>
+      {isTop
+        ? <div style={{ width: 14, height: 14, borderTop: `1px solid ${color}`, borderLeft: `1px solid ${color}`, opacity: .6 }} />
+        : <div style={{ width: 14, height: 14, borderBottom: `1px solid ${color}`, borderLeft: `1px solid ${color}`, opacity: .6 }} />
+      }
+      {isTop
+        ? <div style={{ width: 14, height: 14, borderTop: `1px solid ${color}`, borderRight: `1px solid ${color}`, opacity: .6 }} />
+        : <div style={{ width: 14, height: 14, borderBottom: `1px solid ${color}`, borderRight: `1px solid ${color}`, opacity: .6 }} />
+      }
     </div>
   )
 }

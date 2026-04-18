@@ -1,12 +1,44 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import type { Language } from "@/lib/i18n"
 import { COLOR, FONT, LANG_COLOR, TYPE, TRACK, OPACITY, TOUCH_MIN } from "./ds"
+
+// ── Letter-by-letter scramble (same feel as landing page) ─────────────────────
+const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ אבגדהוזחטיכלמנסעפצ قدمأبتثجح"
+
+function useScramble(text: string, trigger: number) {
+  const [display, setDisplay] = useState(text)
+  useEffect(() => {
+    const duration = 600
+    const start    = Date.now()
+    const lockAt   = text.split("").map((_, i) =>
+      (i / Math.max(text.length - 1, 1)) * duration * 0.65 + Math.random() * duration * 0.35
+    )
+    const id = setInterval(() => {
+      const elapsed = Date.now() - start
+      if (elapsed >= duration) { setDisplay(text); clearInterval(id); return }
+      setDisplay(text.split("").map((char, i) => {
+        if (char === " " || char === "—" || char === "·") return char
+        if (elapsed >= lockAt[i]) return char
+        return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
+      }).join(""))
+    }, 38)
+    return () => clearInterval(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trigger])
+  return display
+}
 
 interface ScreenLanguageProps {
   onSelect: (lang: Language) => void
 }
+
+const SCREEN_LABELS = [
+  { text: "בחירת שפה",         dir: "rtl" as const },
+  { text: "Choose Language",     dir: "ltr" as const },
+  { text: "اختيار اللغة",      dir: "rtl" as const },
+]
 
 const ENTRIES: {
   code:    Language
@@ -18,9 +50,9 @@ const ENTRIES: {
   ch:      string
   freq:    string
 }[] = [
-  { code: "en", text: "ENTER",  font: "'narkiss-yair-variable', sans-serif",         weight: 700, color: LANG_COLOR.en, dir: "ltr", ch: "CH·01", freq: "440.00" },
-  { code: "he", text: "כניסה",  font: "'narkiss-yair-variable', sans-serif",     weight: 700, color: LANG_COLOR.he, dir: "rtl", ch: "CH·02", freq: "528.00" },
-  { code: "ar", text: "ادخل",   font: "'narkiss-yair-variable', sans-serif",           weight: 700, color: LANG_COLOR.ar, dir: "rtl", ch: "CH·03", freq: "639.00" },
+  { code: "en", text: "English",  font: "'narkiss-yair-variable', sans-serif", weight: 700, color: LANG_COLOR.en, dir: "ltr", ch: "CH·01", freq: "440.00" },
+  { code: "he", text: "עברית",    font: "'narkiss-yair-variable', sans-serif", weight: 700, color: LANG_COLOR.he, dir: "rtl", ch: "CH·02", freq: "528.00" },
+  { code: "ar", text: "العربية", font: "'narkiss-yair-variable', sans-serif", weight: 700, color: LANG_COLOR.ar, dir: "rtl", ch: "CH·03", freq: "639.00" },
 ]
 
 const BAR_COUNT = 9
@@ -75,11 +107,11 @@ function LiveFreq({ base, color, active }: { base: string; color: string; active
   return (
     <span style={{
       fontFamily: FONT.base,
-      fontSize:   TYPE.hud,
+      fontSize:   TYPE.xs,
       letterSpacing: TRACK.sm,
       color,
-      opacity: active ? 0.9 : OPACITY.tertiary,
-      transition: "opacity 0.25s",
+      opacity: active ? OPACITY.secondary : OPACITY.tertiary,
+      transition: `opacity 0.3s`,
     }}>
       {val} kHz
     </span>
@@ -87,13 +119,25 @@ function LiveFreq({ base, color, active }: { base: string; color: string; active
 }
 
 export function ScreenLanguage({ onSelect }: ScreenLanguageProps) {
-  const [hovered, setHovered] = useState<Language | null>(null)
-  const [visible, setVisible]  = useState(false)
+  const [hovered,  setHovered]  = useState<Language | null>(null)
+  const [visible,  setVisible]  = useState(false)
+  const [labelIdx, setLabelIdx] = useState(0)
+  const [scramble, setScramble] = useState(0)
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80)
     return () => clearTimeout(t)
   }, [])
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setLabelIdx(i => (i + 1) % SCREEN_LABELS.length)
+      setScramble(n => n + 1)
+    }, 2800)
+    return () => clearInterval(id)
+  }, [])
+
+  const labelDisplay = useScramble(SCREEN_LABELS[labelIdx].text, scramble)
 
   return (
     <div
@@ -110,6 +154,22 @@ export function ScreenLanguage({ onSelect }: ScreenLanguageProps) {
           padding: "0 2rem",
         }}
       >
+        {/* Cycling screen title — scrambles letter by letter on each change */}
+        <div style={{
+          fontFamily:    FONT.base,
+          fontWeight:    300,
+          fontSize:      TYPE.xs,
+          letterSpacing: TRACK.caps,
+          textTransform: "uppercase",
+          color:         COLOR.text,
+          opacity:       OPACITY.tertiary,
+          direction:     SCREEN_LABELS[labelIdx].dir,
+          alignSelf:     "center",
+          marginBottom:  "clamp(0.5rem, 2vw, 1rem)",
+        }}>
+          {labelDisplay}
+        </div>
+
         {ENTRIES.map(({ code, text, font, weight, color, dir, ch, freq }, idx) => {
           const isActive = hovered === code
           const isDimmed = hovered !== null && !isActive
@@ -147,11 +207,11 @@ export function ScreenLanguage({ onSelect }: ScreenLanguageProps) {
               }}>
                 <span style={{
                   fontFamily: FONT.base,
-                  fontSize:   TYPE.hud,
-                  letterSpacing: TRACK.wide,
+                  fontSize:   TYPE.xs,
+                  letterSpacing: TRACK.caps,
                   color,
-                  opacity: isActive ? 0.9 : OPACITY.tertiary,
-                  transition: "opacity 0.25s",
+                  opacity: isActive ? OPACITY.secondary : OPACITY.tertiary,
+                  transition: "opacity 0.3s",
                 }}>
                   {ch}
                 </span>
@@ -163,23 +223,18 @@ export function ScreenLanguage({ onSelect }: ScreenLanguageProps) {
                 fontFamily:    font,
                 fontWeight:    weight,
                 fontSize:      "clamp(3rem, 16vw, 6.5rem)",
-                letterSpacing: code === "en" ? "0.1em" : "0.03em",
+                letterSpacing: code === "en" ? "0.02em" : "0.03em",
                 textTransform: code === "en" ? "uppercase" : "none",
                 color,
                 direction:     dir,
                 lineHeight:    1,
-                textShadow:    isActive
-                  ? `0 0 40px ${color}99, 0 0 80px ${color}44`
-                  : "none",
                 transform:     isActive ? "scale(1.04)" : "scale(1)",
-                transition:    "text-shadow 0.25s ease, transform 0.25s ease",
+                transition:    `transform 0.3s cubic-bezier(0.625,0.05,0,1)`,
                 display:       "block",
               }}>
                 {text}
               </span>
 
-              {/* waveform */}
-              <WaveBar color={color} active={isActive} />
             </button>
           )
         })}
