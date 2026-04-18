@@ -109,14 +109,17 @@ export function buildImprintPositions(sig: number[]): Float32Array {
   }
   const ampSum = modes.reduce((a, m) => a + m.amp, 0)
 
+  // R=1.5 keeps the pattern comfortably inside portrait viewports (camera fov=60 z=7)
+  const DISPLAY_R = 1.5
+
   const pts: number[] = []
   let threshold = 0.11
 
   while (pts.length < N * 3 && threshold < 0.8) {
     for (let i = 0; i < 600_000 && pts.length < N * 3; i++) {
-      const x = (rng() * 2 - 1) * R
-      const y = (rng() * 2 - 1) * R
-      if (x * x + y * y > R * R) continue
+      const x = (rng() * 2 - 1) * DISPLAY_R
+      const y = (rng() * 2 - 1) * DISPLAY_R
+      if (x * x + y * y > DISPLAY_R * DISPLAY_R) continue
       let E = 0
       for (const m of modes) E += m.amp * Math.sin(m.fx * x + m.px) * Math.sin(m.fy * y + m.py)
       if (Math.abs(E / ampSum) < threshold) pts.push(x, y, (rng() - 0.5) * 0.06)
@@ -124,7 +127,7 @@ export function buildImprintPositions(sig: number[]): Float32Array {
     threshold *= 1.4
   }
 
-  while (pts.length < N * 3) pts.push((rng() - 0.5) * R * 2, (rng() - 0.5) * R * 2, 0)
+  while (pts.length < N * 3) pts.push((rng() - 0.5) * DISPLAY_R * 2, (rng() - 0.5) * DISPLAY_R * 2, 0)
 
   return new Float32Array(pts.slice(0, N * 3))
 }

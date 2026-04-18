@@ -65,7 +65,7 @@ const LABELS: Record<Language, {
   en: {
     captured:      "SIGNATURE FORMING",
     transmitting:  "TRANSMITTING SIGNAL",
-    savedHud:      "SIGNATURE STORED",
+    savedHud:      "SIGNATURE FORMED",
     amp: "AMPLITUDE", pitch: "PITCH", timbre: "TIMBRE",
     savedTitle:    "Your voice is now\npart of the archive.",
     saveToArchive: "SAVE MY SIGNATURE TO THE ARCHIVE",
@@ -74,7 +74,7 @@ const LABELS: Record<Language, {
   he: {
     captured:      "חתימה נוצרת",
     transmitting:  "שידור אות",
-    savedHud:      "חתימה נשמרה",
+    savedHud:      "חתימה נוצרה",
     amp: "עוצמה", pitch: "גובה", timbre: "גוון",
     savedTitle:    "קולך הוא עכשיו\nחלק מהארכיון.",
     saveToArchive: "שמור את חתימתי לארכיון",
@@ -83,7 +83,7 @@ const LABELS: Record<Language, {
   ar: {
     captured:      "البصمة تتشكّل",
     transmitting:  "إرسال الإشارة",
-    savedHud:      "البصمة مخزَّنة",
+    savedHud:      "البصمة تشكّلت",
     amp: "الشدة", pitch: "النبرة", timbre: "الجرس",
     savedTitle:    "أصبح صوتك الآن\nجزءاً من الأرشيف.",
     saveToArchive: "احفظ بصمتي في الأرشيف",
@@ -141,6 +141,12 @@ export function ScreenWonderFlow({
     language === "en" ? "en-GB" : language === "he" ? "he-IL" : "ar-SA",
     { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }
   ))
+  // Live cosmic time (T+ Unix seconds)
+  const [cosmicTime, setCosmicTime] = useState(() => Math.floor(Date.now() / 1000))
+  useEffect(() => {
+    const id = setInterval(() => setCosmicTime(Math.floor(Date.now() / 1000)), 1000)
+    return () => clearInterval(id)
+  }, [])
 
   // Track mount time so we can delay imprint until morph A is done
   const mountTimeRef = useRef(Date.now())
@@ -434,14 +440,39 @@ export function ScreenWonderFlow({
           }}>
             {t.title.replace("\n", " ")}
           </p>
-          {/* Single metadata line: location · date */}
-          <p style={{
-            fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs,
-            letterSpacing: TRACK.sm, color: COLOR.text,
-            opacity: OPACITY.tertiary * 0.8, margin: 0, direction: "ltr",
+
+          {/* Metrics row — same colors as canvas bands */}
+          <div style={{
+            display: "flex",
+            flexDirection: dir === "rtl" ? "row-reverse" : "row",
+            gap: "clamp(1rem, 4vw, 1.75rem)",
+            marginTop: "0.35rem",
           }}>
-            {locationLabel}  ·  {formattedTime}
-          </p>
+            {[
+              { label: lbl.amp,    val: Math.round(bassE * 100), color: BAND.amp },
+              { label: lbl.pitch,  val: Math.round(midE  * 100), color: BAND.pitch },
+              { label: lbl.timbre, val: Math.round(highE * 100), color: BAND.timbre },
+            ].map(({ label, val, color }) => (
+              <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.55rem", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.7 }}>
+                  {label}
+                </span>
+                <span style={{ fontFamily: FONT.base, fontWeight: 500, fontSize: TYPE.sm, color, textShadow: `0 0 10px ${color}70` }}>
+                  {val}%
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Cosmic + earth time */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: "0.25rem" }}>
+            <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.6, margin: 0, direction: "ltr" }}>
+              T+ {cosmicTime.toLocaleString("en-US")}
+            </p>
+            <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.8, margin: 0, direction: "ltr" }}>
+              {locationLabel}  ·  {formattedTime}
+            </p>
+          </div>
         </div>
       </div>
 
