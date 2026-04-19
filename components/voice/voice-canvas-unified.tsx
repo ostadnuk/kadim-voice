@@ -7,9 +7,9 @@
  *   Phase 3 (transmitting):     cloud holds voice shape, slow drift
  *   Phase 4 (imprint):          cloud → Chladni nodal-line pattern
  *
- * Color scheme: unified warm silver (#c8d8ee) throughout all cloud/voice phases,
- * crystallising to cool blue-white (#edf4ff) as the Chladni imprint forms.
- * Per-particle breathing (aPhase) and subtle turbulence give organic liveness.
+ * Interaction:
+ *   Gyroscope  → smooth additive tilt of the cloud (iOS permission requested on first touch)
+ *   Touch/drag → per-particle repulsion in world-space; particles flee the finger
  */
 
 import { useRef, useMemo, useEffect } from "react"
@@ -36,6 +36,11 @@ const MORPH_B_DUR  = 4.5
 // Particle colors — warm silver in cloud, crystalline blue-white at imprint
 const C_BASE    = new THREE.Color("#c8d8ee")  // warm silver — cloud phase
 const C_IMPRINT = new THREE.Color("#edf4ff")  // cool crystal — imprint phase
+
+// ── Interaction state (per-canvas, passed via refs) ───────────────────────────
+
+interface GyroState  { beta: number; gamma: number; active: boolean }
+interface TouchState { ndcX: number; ndcY: number; active: boolean }
 
 // ── Position builders ─────────────────────────────────────────────────────────
 
@@ -105,7 +110,6 @@ export function buildImprintPositions(sig: number[]): Float32Array {
   }
   const ampSum = modes.reduce((a, m) => a + m.amp, 0)
 
-  // R=1.5 keeps the pattern comfortably inside portrait viewports (camera fov=60 z=7)
   const DISPLAY_R = 1.5
 
   const pts: number[] = []
@@ -134,9 +138,11 @@ interface UnifiedSceneProps {
   waveformPeaks:   number[]
   signaturePoints: number[] | null
   phase:           CanvasPhase
+  gyroRef:         React.RefObject<GyroState>
+  touchRef:        React.RefObject<TouchState>
 }
 
-function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedSceneProps) {
+function UnifiedScene({ waveformPeaks, signaturePoints, phase, gyroRef, touchRef }: UnifiedSceneProps) {
   const pointsRef       = useRef<THREE.Points>(null!)
   const startRef        = useRef<number | null>(null)
   const phaseRef        = useRef(phase)
@@ -146,13 +152,16 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
   const morphBStartRef  = useRef<number | null>(null)
   const imprintReadyRef = useRef(false)
 
+  // Smoothed interaction state
+  const tiltXRef        = useRef(0)
+  const tiltYRef        = useRef(0)
+  const repulseActiveRef = useRef(0)
+
   const { geometry, material } = useMemo(() => {
     const randomPos = buildRandom()
     const voicePos  = buildVoice(waveformPeaks)
 
-    // Per-particle base size — 12 % accent particles, rest fine
     const sizes  = new Float32Array(N)
-    // Per-particle breathing phase offset (0–2π) — drives organic pulsing
     const phases = new Float32Array(N)
     for (let i = 0; i < N; i++) {
       sizes[i]  = Math.random() < 0.12
@@ -174,12 +183,17 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
       depthWrite:  false,
       blending:    THREE.AdditiveBlending,
       uniforms: {
-        uOpacity:      { value: 0.0 },
-        uMorphA:       { value: 0.0 },
-        uMorphB:       { value: 0.0 },
-        uTime:         { value: 0.0 },
-        uColorBase:    { value: C_BASE },
-        uColorImprint: { value: C_IMPRINT },
+        uOpacity:        { value: 0.0 },
+        uMorphA:         { value: 0.0 },
+        uMorphB:         { value: 0.0 },
+        uTime:           { value: 0.0 },
+        uColorBase:      { value: C_BASE },
+        uColorImprint:   { value: C_IMPRINT },
+        // Touch repulsion
+        uRepulsePos:     { value: new THREE.Vector2(0, 0) },
+        uRepulseRadius:  { value: 1.8 },
+        uRepulseStrength:{ value: 0.7 },
+        uRepulseActive:  { value: 0.0 },
       },
       vertexShader: `
         attribute float size;
@@ -191,18 +205,21 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
         uniform float   uMorphA;
         uniform float   uMorphB;
         uniform float   uTime;
+        uniform vec2    uRepulsePos;
+        uniform float   uRepulseRadius;
+        uniform float   uRepulseStrength;
+        uniform float   uRepulseActive;
         varying float   vAlpha;
         varying float   vBreath;
 
-        // Pseudo-random hash for per-particle turbulence
         float hash(float n) { return fract(sin(n) * 43758.5453); }
 
         void main() {
-          // ── Morphed position ────────────────────────────────────────────
+          // ── Morphed position ──────────────────────────────────────────────
           vec3 voiced = mix(aRandomPos, aVoicePos, uMorphA);
           vec3 pos    = mix(voiced, aImprintPos, uMorphB);
 
-          // ── Organic turbulence — gentle in cloud, fades out at imprint ──
+          // ── Organic turbulence — fades out at imprint ─────────────────────
           float turbScale = 1.0 - smoothstep(0.4, 0.9, uMorphB);
           float t1 = uTime * 0.38 + aPhase;
           float t2 = uTime * 0.27 + aPhase * 1.3;
@@ -211,7 +228,19 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
           pos.y += cos(t2) * 0.018 * turbScale;
           pos.z += sin(t3) * 0.012 * turbScale;
 
-          // ── Breathing size — slower/subtler at imprint ──────────────────
+          // ── Touch repulsion — push particles away from finger ────────────
+          // uRepulsePos is NDC (-1..1); approximate world-space at z=0 (cam z=7, fov=60)
+          // tan(30°)*7 ≈ 4.04 half-height in world units
+          vec3 repulseWorld = vec3(uRepulsePos.x * 4.04, uRepulsePos.y * 4.04, 0.0);
+          vec3 toParticle   = pos - repulseWorld;
+          float repDist     = length(toParticle);
+          if (repDist < uRepulseRadius && uRepulseActive > 0.001) {
+            float t      = 1.0 - repDist / uRepulseRadius;
+            float force  = t * t * uRepulseStrength * uRepulseActive;
+            pos += normalize(toParticle + vec3(0.0001)) * force;
+          }
+
+          // ── Breathing size ─────────────────────────────────────────────────
           float breathAmt  = mix(0.38, 0.10, smoothstep(0.5, 1.0, uMorphB));
           float breathFreq = mix(1.55, 0.60, smoothstep(0.5, 1.0, uMorphB));
           float breath     = 1.0 + breathAmt * sin(uTime * breathFreq + aPhase);
@@ -235,14 +264,9 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
           vec2  uv   = gl_PointCoord - 0.5;
           float dist = length(uv);
           if (dist > 0.5) discard;
-
-          // Softer falloff when breathing is large; crisper at imprint
           float edge  = mix(0.28, 0.22, smoothstep(0.5, 1.0, uMorphB));
           float alpha = (1.0 - smoothstep(edge, 0.5, dist)) * vAlpha;
-
-          // Warm silver → cool crystal as imprint crystallises
           vec3 col = mix(uColorBase, uColorImprint, smoothstep(0.55, 1.0, uMorphB));
-
           gl_FragColor = vec4(col, alpha);
         }
       `,
@@ -252,7 +276,7 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waveformPeaks])
 
-  // Async imprint build — defer off rAF to avoid frame drops
+  // Async imprint build
   useEffect(() => {
     if (!signaturePoints || imprintReadyRef.current) return
     imprintReadyRef.current = true
@@ -264,7 +288,6 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
     }, 0)
   }, [signaturePoints, geometry])
 
-  // Reset morphB start when imprint phase begins
   useEffect(() => {
     if (phase === "imprint") morphBStartRef.current = null
   }, [phase])
@@ -275,13 +298,9 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
     const elapsed = clock.getElapsedTime() - startRef.current
 
     gl.setClearColor(BG, 1)
-
-    // Drive breathing / turbulence time
     material.uniforms.uTime.value = clock.getElapsedTime()
 
     // ── Opacity ──────────────────────────────────────────────────────────────
-    // Reading phase (0 → READING_END): fade in softly to 0.28
-    // Active phase  (READING_END+):   ramp from 0.28 → 1.0 over 2s
     if (elapsed < READING_END) {
       material.uniforms.uOpacity.value = Math.min(elapsed / 2.0, 0.28)
     } else {
@@ -289,7 +308,7 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
       material.uniforms.uOpacity.value = 0.28 + t * 0.72
     }
 
-    // ── MorphA: random → voice (starts at READING_END) ───────────────────────
+    // ── MorphA: random → voice ────────────────────────────────────────────────
     if (elapsed > READING_END && morphARef.current < 1) {
       const t = Math.min((elapsed - READING_END) / MORPH_A_DUR, 1.0)
       morphARef.current = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
@@ -304,24 +323,45 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase }: UnifiedScenePro
       material.uniforms.uMorphB.value = morphBRef.current
     }
 
-    // ── Rotation ─────────────────────────────────────────────────────────────
+    // ── Base rotation ─────────────────────────────────────────────────────────
     const inImprint = morphBRef.current > 0.85
+    let baseRX: number, baseRY: number, baseRZ: number
+
     if (inImprint) {
-      // Chladni plate: barely tilts
-      pointsRef.current.rotation.x = Math.sin(elapsed * 0.012) * 0.05
-      pointsRef.current.rotation.y = Math.cos(elapsed * 0.008) * 0.04
-      pointsRef.current.rotation.z = 0
+      baseRX = Math.sin(elapsed * 0.012) * 0.05
+      baseRY = Math.cos(elapsed * 0.008) * 0.04
+      baseRZ = 0
     } else if (elapsed < READING_END) {
-      // Reading phase: very slow meditative drift
-      pointsRef.current.rotation.y = elapsed * 0.008
-      pointsRef.current.rotation.x = Math.sin(elapsed * 0.005) * 0.03
-      pointsRef.current.rotation.z = Math.cos(elapsed * 0.004) * 0.01
+      baseRX = Math.sin(elapsed * 0.005) * 0.03
+      baseRY = elapsed * 0.008
+      baseRZ = Math.cos(elapsed * 0.004) * 0.01
     } else {
-      // Active phase: cloud comes alive
-      pointsRef.current.rotation.y =  elapsed * 0.035
-      pointsRef.current.rotation.x =  Math.sin(elapsed * 0.020) * 0.12
-      pointsRef.current.rotation.z =  Math.cos(elapsed * 0.015) * 0.05
+      baseRX = Math.sin(elapsed * 0.020) * 0.12
+      baseRY = elapsed * 0.035
+      baseRZ = Math.cos(elapsed * 0.015) * 0.05
     }
+
+    // ── Gyroscope tilt — additive, smoothed ──────────────────────────────────
+    // beta  = front/back tilt (-90 to 90°), gamma = left/right tilt (-90 to 90°)
+    const gyro = gyroRef.current
+    const targetTiltX = gyro.active ? gyro.beta  * 0.003 : 0  // ~0.27 rad max
+    const targetTiltY = gyro.active ? gyro.gamma * 0.004 : 0  // ~0.36 rad max
+    tiltXRef.current = THREE.MathUtils.lerp(tiltXRef.current, targetTiltX, 0.04)
+    tiltYRef.current = THREE.MathUtils.lerp(tiltYRef.current, targetTiltY, 0.04)
+
+    pointsRef.current.rotation.x = baseRX + tiltXRef.current
+    pointsRef.current.rotation.y = baseRY + tiltYRef.current
+    pointsRef.current.rotation.z = baseRZ
+
+    // ── Touch repulsion uniforms ──────────────────────────────────────────────
+    const touch = touchRef.current
+    repulseActiveRef.current = THREE.MathUtils.lerp(
+      repulseActiveRef.current,
+      touch.active ? 1.0 : 0.0,
+      0.14
+    )
+    material.uniforms.uRepulsePos.value.set(touch.ndcX, touch.ndcY)
+    material.uniforms.uRepulseActive.value = repulseActiveRef.current
   })
 
   return <points ref={pointsRef} geometry={geometry} material={material} />
@@ -338,6 +378,88 @@ export function VoiceCanvasUnified({
   signaturePoints: number[] | null
   phase:           CanvasPhase
 }) {
+  const gyroRef  = useRef<GyroState>({ beta: 0, gamma: 0, active: false })
+  const touchRef = useRef<TouchState>({ ndcX: 0, ndcY: 0, active: false })
+  const gyroPermRef = useRef(false)
+
+  useEffect(() => {
+    // ── Gyroscope ─────────────────────────────────────────────────────────────
+    function onOrientation(e: DeviceOrientationEvent) {
+      gyroRef.current.beta   = e.beta  ?? 0
+      gyroRef.current.gamma  = e.gamma ?? 0
+      gyroRef.current.active = true
+    }
+
+    async function requestGyro() {
+      if (gyroPermRef.current) return
+      gyroPermRef.current = true
+      // iOS 13+ requires explicit permission
+      const DOE = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }
+      if (typeof DOE.requestPermission === "function") {
+        try {
+          const perm = await DOE.requestPermission()
+          if (perm === "granted") window.addEventListener("deviceorientation", onOrientation)
+        } catch { /* permission denied or unavailable */ }
+      } else {
+        // Android / desktop — no permission needed
+        window.addEventListener("deviceorientation", onOrientation)
+      }
+    }
+
+    // Try adding listener immediately (works on Android / desktop)
+    window.addEventListener("deviceorientation", onOrientation)
+
+    // ── Touch repulsion ───────────────────────────────────────────────────────
+    function updateTouch(clientX: number, clientY: number) {
+      touchRef.current.ndcX = (clientX / window.innerWidth)  * 2 - 1
+      touchRef.current.ndcY = -((clientY / window.innerHeight) * 2 - 1)
+    }
+
+    function onTouchStart(e: TouchEvent) {
+      const t = e.touches[0]
+      updateTouch(t.clientX, t.clientY)
+      touchRef.current.active = true
+      requestGyro()  // piggyback iOS permission on first touch gesture
+    }
+    function onTouchMove(e: TouchEvent) {
+      const t = e.touches[0]
+      updateTouch(t.clientX, t.clientY)
+    }
+    function onTouchEnd() {
+      touchRef.current.active = false
+    }
+
+    // Desktop: click-drag to push
+    function onMouseDown(e: MouseEvent) {
+      updateTouch(e.clientX, e.clientY)
+      touchRef.current.active = true
+    }
+    function onMouseMove(e: MouseEvent) {
+      if (!touchRef.current.active) return
+      updateTouch(e.clientX, e.clientY)
+    }
+    function onMouseUp() {
+      touchRef.current.active = false
+    }
+
+    window.addEventListener("touchstart",  onTouchStart,  { passive: true })
+    window.addEventListener("touchmove",   onTouchMove,   { passive: true })
+    window.addEventListener("touchend",    onTouchEnd)
+    window.addEventListener("mousedown",   onMouseDown)
+    window.addEventListener("mousemove",   onMouseMove)
+    window.addEventListener("mouseup",     onMouseUp)
+
+    return () => {
+      window.removeEventListener("deviceorientation", onOrientation)
+      window.removeEventListener("touchstart",  onTouchStart)
+      window.removeEventListener("touchmove",   onTouchMove)
+      window.removeEventListener("touchend",    onTouchEnd)
+      window.removeEventListener("mousedown",   onMouseDown)
+      window.removeEventListener("mousemove",   onMouseMove)
+      window.removeEventListener("mouseup",     onMouseUp)
+    }
+  }, [])
+
   return (
     <Canvas
       camera={{ fov: 60, position: [0, 0, 7] }}
@@ -350,6 +472,8 @@ export function VoiceCanvasUnified({
         waveformPeaks={waveformPeaks}
         signaturePoints={signaturePoints}
         phase={phase}
+        gyroRef={gyroRef}
+        touchRef={touchRef}
       />
     </Canvas>
   )
