@@ -55,7 +55,7 @@ const T: Record<Language, {
     footer:        "Created by ReactionTime Collective · 2026",
   },
   he: {
-    voices:        (n) => `${n.toLocaleString()} קולות`,
+    voices:        (n) => `${n.toLocaleString()} ${n === 1 ? "קול" : "קולות"}`,
     collectiveSub: "סכום כל הקולות שנקלטו בקדים",
     individuals:   "חתימות אישיות",
     loading:       "טוען...",
@@ -109,15 +109,16 @@ function WorldClock() {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 interface ScreenArchiveProps {
-  language?: Language
-  onBack:    () => void
+  language?:      Language
+  mySignatureId?: string | null
+  onBack:         () => void
 }
 
 const PAGE_SIZE = 12
 
-export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
+export function ScreenArchive({ language = "en", mySignatureId, onBack }: ScreenArchiveProps) {
   const t   = T[language]
-  const dir = language === "en" ? "ltr" : "rtl"
+  const dir = (language === "en" ? "ltr" : "rtl") as "ltr" | "rtl"
 
   // Collective pattern
   const [collectiveSig,   setCollectiveSig]   = useState<number[] | null>(null)
@@ -170,6 +171,13 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
 
   return (
     <DSShell dir={dir} className="overflow-y-auto">
+      <style>{`
+        @keyframes my-entry-glow {
+          0%   { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.6), 0 0 24px rgba(125,212,160,0.2); }
+          60%  { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.4), 0 0 16px rgba(125,212,160,0.12); }
+          100% { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.0), 0 0 0px rgba(125,212,160,0.0); }
+        }
+      `}</style>
 
       <DSTopBar
         left={<DSBack onClick={onBack} />}
@@ -262,7 +270,8 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
         ) : (
           <>
             {entries.map((entry, idx) => {
-              const num = String(globalOffset + idx + 1).padStart(2, "0")
+              const num    = String(globalOffset + idx + 1).padStart(2, "0")
+              const isMine = mySignatureId && entry.id === mySignatureId
               return (
                 <button
                   key={entry.id}
@@ -272,6 +281,7 @@ export function ScreenArchive({ language = "en", onBack }: ScreenArchiveProps) {
                     cursor: "pointer",
                     padding: "0 clamp(1.25rem, 6vw, 2.5rem)",
                     WebkitTapHighlightColor: "transparent",
+                    ...(isMine ? { animation: "my-entry-glow 3.5s ease-out forwards" } : {}),
                   }}
                 >
                   <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />

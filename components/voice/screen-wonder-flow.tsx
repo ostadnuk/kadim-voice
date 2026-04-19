@@ -57,7 +57,7 @@ const STORY_LINES: Record<Language, string[]> = {
 const LABELS: Record<Language, {
   captured: string; transmitting: string; savedHud: string
   amp: string; pitch: string; timbre: string
-  savedTitle: string
+  sigPrefix: string
   saveToArchive: string
   retryError: string
 }> = {
@@ -66,7 +66,7 @@ const LABELS: Record<Language, {
     transmitting:  "TRANSMITTING SIGNAL",
     savedHud:      "SIGNATURE FORMED",
     amp: "AMPLITUDE", pitch: "PITCH", timbre: "TIMBRE",
-    savedTitle:    "Your voice is now\npart of the archive.",
+    sigPrefix:     "VOICE #",
     saveToArchive: "SAVE MY SIGNATURE TO THE ARCHIVE",
     retryError:    "Transmission failed. Retrying…",
   },
@@ -75,7 +75,7 @@ const LABELS: Record<Language, {
     transmitting:  "שידור אות",
     savedHud:      "חתימה נוצרה",
     amp: "עוצמה", pitch: "גובה", timbre: "גוון",
-    savedTitle:    "קולך הוא עכשיו\nחלק מהארכיון.",
+    sigPrefix:     "קול מספר ",
     saveToArchive: "שמור את חתימתי לארכיון",
     retryError:    "שידור נכשל. מנסה שוב…",
   },
@@ -84,7 +84,7 @@ const LABELS: Record<Language, {
     transmitting:  "إرسال الإشارة",
     savedHud:      "البصمة تشكّلت",
     amp: "الشدة", pitch: "النبرة", timbre: "الجرس",
-    savedTitle:    "أصبح صوتك الآن\nجزءاً من الأرشيف.",
+    sigPrefix:     "صوت #",
     saveToArchive: "احفظ بصمتي في الأرشيف",
     retryError:    "فشل الإرسال. جارٍ الإعادة…",
   },
@@ -114,7 +114,7 @@ interface ScreenWonderFlowProps {
   location:      LocationState
   audioBlob:     Blob
   mixOptIn:      boolean
-  onArchive:     () => void
+  onArchive:     (entryId: string) => void
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -131,11 +131,13 @@ export function ScreenWonderFlow({
 
   const [bassE, midE, highE] = deriveEnergies(waveformPeaks)
 
-  const [canvasPhase,     setCanvasPhase]     = useState<CanvasPhase>("wonder")
-  const [signaturePoints, setSignaturePoints] = useState<number[] | null>(null)
-  const [uploadError,     setUploadError]     = useState(false)
-  const [uploadAttempts,  setUploadAttempts]  = useState(0)
-  const [uploadGaveUp,    setUploadGaveUp]    = useState(false)
+  const [canvasPhase,      setCanvasPhase]      = useState<CanvasPhase>("wonder")
+  const [signaturePoints,  setSignaturePoints]  = useState<number[] | null>(null)
+  const [signatureNumber,  setSignatureNumber]  = useState<number | null>(null)
+  const [uploadedId,       setUploadedId]       = useState<string | null>(null)
+  const [uploadError,      setUploadError]      = useState(false)
+  const [uploadAttempts,   setUploadAttempts]   = useState(0)
+  const [uploadGaveUp,     setUploadGaveUp]     = useState(false)
   const [visibleLines,    setVisibleLines]    = useState(0)
   const [formattedTime] = useState(() => new Date().toLocaleString(
     language === "en" ? "en-GB" : language === "he" ? "he-IL" : "ar-SA",
@@ -196,6 +198,12 @@ export function ScreenWonderFlow({
 
       const res = await fetch("/api/upload", { method: "POST", body: formData })
       if (!res.ok) throw new Error(await res.text())
+
+      const uploadResult = await res.json()
+      setUploadedId(uploadResult.id ?? null)
+      if (typeof uploadResult.signatureNumber === "number") {
+        setSignatureNumber(uploadResult.signatureNumber)
+      }
 
       // Delay imprint until morph A has completed (canvas needs ~9s from mount)
       const elapsed = (Date.now() - mountTimeRef.current) / 1000
@@ -459,6 +467,22 @@ export function ScreenWonderFlow({
           ))}
         </div>
 
+        {/* Signature number — the loop-closure moment */}
+        {signatureNumber !== null && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <span style={{
+              fontFamily: FONT.base, fontWeight: 700,
+              fontSize: "clamp(2rem, 8vw, 3rem)",
+              letterSpacing: "-0.02em", lineHeight: 1,
+              color: "#edf4ff",
+              textShadow: "0 0 24px rgba(125,212,160,0.5), 0 0 60px rgba(125,212,160,0.2)",
+              direction: "ltr",
+            }}>
+              {lbl.sigPrefix}{signatureNumber.toLocaleString("en-US")}
+            </span>
+          </div>
+        )}
+
         {/* Cosmic + earth time */}
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.55, margin: 0, direction: "ltr" }}>
@@ -507,7 +531,7 @@ export function ScreenWonderFlow({
       {/* Archive CTA — fixed at bottom, appears only when pattern has settled */}
       <div ref={archiveCtaRef} className="ds-safe-bottom px-4"
         style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20, paddingTop: 8, transition: "opacity 1.2s ease" }}>
-        <DSButton onClick={onArchive} color={COLOR.text}>{lbl.saveToArchive}</DSButton>
+        <DSButton onClick={() => onArchive(uploadedId ?? "")} color={COLOR.text}>{lbl.saveToArchive}</DSButton>
       </div>
 
     </DSShell>

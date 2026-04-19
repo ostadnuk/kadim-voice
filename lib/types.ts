@@ -21,6 +21,7 @@ export interface ArchiveEntry {
 export interface UploadResponse {
   id: string
   audioUrl: string
+  signatureNumber: number   // ordinal position in archive (1-based)
 }
 
 export interface AnalyzeResponse {

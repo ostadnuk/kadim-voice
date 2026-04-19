@@ -76,7 +76,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: dbError.message }, { status: 500 })
     }
 
-    return NextResponse.json({ id: data.id, audioUrl })
+    // Count total recordings to give the user their ordinal position
+    const { count } = await supabase
+      .from("recordings")
+      .select("*", { count: "exact", head: true })
+
+    const signatureNumber = count ?? 0
+
+    return NextResponse.json({ id: data.id, audioUrl, signatureNumber })
   } catch (err) {
     console.error("Upload route error:", err)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

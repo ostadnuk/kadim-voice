@@ -77,7 +77,7 @@ function delay(ms: number): Promise<void> {
 export async function uploadAudio(_blob: Blob): Promise<UploadResponse> {
   await delay(1500)
   const id = `entry-${Date.now()}`
-  return { id, audioUrl: `/audio/${id}.webm` }
+  return { id, audioUrl: `/audio/${id}.webm`, signatureNumber: Math.floor(Math.random() * 3000) + 1 }
 }
 
 export async function analyzeAudio(_audioUrl: string): Promise<AnalyzeResponse> {

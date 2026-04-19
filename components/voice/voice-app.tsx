@@ -111,6 +111,7 @@ export function VoiceApp() {
   const [recording, setRecording] = useState<RecordingState | null>(null)
   const [location, setLocation] = useState<LocationState | null>(null)
   const [, setConsent] = useState<ConsentState | null>(null)
+  const [mySignatureId, setMySignatureId] = useState<string | null>(null)
 
   const resetFlow = useCallback(() => {
     setStep("welcome")
@@ -193,12 +194,12 @@ export function VoiceApp() {
             location={location}
             audioBlob={recording.blob ?? new Blob([], { type: "audio/webm" })}
             mixOptIn={true}
-            onArchive={() => setStep("archive")}
+            onArchive={(entryId) => { setMySignatureId(entryId || null); setStep("archive") }}
           />
         )
 
       case "archive":
-        return <ScreenArchive language={language} onBack={resetFlow} />
+        return <ScreenArchive language={language} mySignatureId={mySignatureId} onBack={resetFlow} />
 
       default:
         return null
