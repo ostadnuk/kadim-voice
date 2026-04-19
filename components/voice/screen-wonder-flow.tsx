@@ -325,6 +325,29 @@ export function ScreenWonderFlow({
         }}>
           {fmtDuration(duration)}  ·  {locationLabel}
         </div>
+
+        {/* Hz metrics — visible during wonder/transmitting */}
+        <div style={{
+          display: "flex", flexDirection: "row",
+          justifyContent: dir === "rtl" ? "flex-end" : "flex-start",
+          gap: "clamp(1.25rem, 5vw, 2rem)",
+          marginTop: "0.35rem",
+        }}>
+          {[
+            { label: lbl.amp,    hz: bassHz,  color: BAND.amp },
+            { label: lbl.pitch,  hz: midHz,   color: BAND.pitch },
+            { label: lbl.timbre, hz: highHz,  color: BAND.timbre },
+          ].map(({ label, hz, color }) => (
+            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2, textAlign: "center" }}>
+              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.65rem", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.75 }}>
+                {label}
+              </span>
+              <span style={{ fontFamily: FONT.base, fontWeight: 600, fontSize: "clamp(1rem, 3.8vw, 1.2rem)", letterSpacing: "-0.01em", color, textShadow: `0 0 14px ${color}70`, direction: "ltr" }}>
+                {hz.toLocaleString("en-US")}<span style={{ fontWeight: 300, fontSize: "0.6em", opacity: 0.65, marginLeft: "0.2em" }}>Hz</span>
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Imprint top indicator — replaces HUD when pattern is revealed */}
@@ -378,69 +401,6 @@ export function ScreenWonderFlow({
               </p>
             ))}
 
-            {/* Colored metrics row — fades in as 5th element */}
-            <div style={{
-              display: "flex",
-              flexDirection: dir === "rtl" ? "row-reverse" : "row",
-              gap: "clamp(1rem, 4vw, 1.75rem)",
-              opacity: visibleLines > 4 ? 1 : 0,
-              transition: "opacity 1.6s ease",
-              marginTop: "clamp(0.25rem, 1vw, 0.5rem)",
-            }}>
-              {/* AMPLITUDE — amber */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{
-                  fontFamily: FONT.base, fontWeight: 300, fontSize: "0.6rem",
-                  letterSpacing: TRACK.caps, textTransform: "uppercase",
-                  color: BAND.amp, opacity: 0.7,
-                }}>
-                  {lbl.amp}
-                </span>
-                <span style={{
-                  fontFamily: FONT.base, fontWeight: 500, fontSize: TYPE.sm,
-                  color: BAND.amp,
-                  textShadow: `0 0 12px ${BAND.amp}80`,
-                }}>
-                  {Math.round(bassE * 100)}%
-                </span>
-              </div>
-
-              {/* PITCH — teal */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{
-                  fontFamily: FONT.base, fontWeight: 300, fontSize: "0.6rem",
-                  letterSpacing: TRACK.caps, textTransform: "uppercase",
-                  color: BAND.pitch, opacity: 0.7,
-                }}>
-                  {lbl.pitch}
-                </span>
-                <span style={{
-                  fontFamily: FONT.base, fontWeight: 500, fontSize: TYPE.sm,
-                  color: BAND.pitch,
-                  textShadow: `0 0 12px ${BAND.pitch}80`,
-                }}>
-                  {Math.round(midE * 100)}%
-                </span>
-              </div>
-
-              {/* TIMBRE — violet */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{
-                  fontFamily: FONT.base, fontWeight: 300, fontSize: "0.6rem",
-                  letterSpacing: TRACK.caps, textTransform: "uppercase",
-                  color: BAND.timbre, opacity: 0.7,
-                }}>
-                  {lbl.timbre}
-                </span>
-                <span style={{
-                  fontFamily: FONT.base, fontWeight: 500, fontSize: TYPE.sm,
-                  color: BAND.timbre,
-                  textShadow: `0 0 12px ${BAND.timbre}80`,
-                }}>
-                  {Math.round(highE * 100)}%
-                </span>
-              </div>
-            </div>
 
           </div>
         </div>
@@ -468,11 +428,11 @@ export function ScreenWonderFlow({
             { label: lbl.pitch,  hz: midHz,   color: BAND.pitch },
             { label: lbl.timbre, hz: highHz,  color: BAND.timbre },
           ].map(({ label, hz, color }) => (
-            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 3, textAlign: "center" }}>
-              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.65rem", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.75 }}>
+            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "center" }}>
+              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "clamp(0.65rem, 2.2vw, 0.8rem)", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.75 }}>
                 {label}
               </span>
-              <span style={{ fontFamily: FONT.base, fontWeight: 600, fontSize: "clamp(0.9rem, 3.5vw, 1.15rem)", letterSpacing: "-0.01em", color, textShadow: `0 0 14px ${color}70`, direction: "ltr" }}>
+              <span style={{ fontFamily: FONT.base, fontWeight: 600, fontSize: "clamp(1.15rem, 4.5vw, 1.5rem)", letterSpacing: "-0.01em", color, textShadow: `0 0 14px ${color}70`, direction: "ltr" }}>
                 {hz.toLocaleString("en-US")}<span style={{ fontWeight: 300, fontSize: "0.6em", opacity: 0.65, marginLeft: "0.2em" }}>Hz</span>
               </span>
             </div>
@@ -483,8 +443,8 @@ export function ScreenWonderFlow({
         {signatureNumber !== null && (
           <p style={{
             fontFamily: FONT.base, fontWeight: 700,
-            fontSize: "clamp(1.3rem, 5vw, 1.8rem)",
-            letterSpacing: "-0.01em", lineHeight: 1,
+            fontSize: "clamp(1.8rem, 7vw, 2.6rem)",
+            letterSpacing: "-0.02em", lineHeight: 1,
             color: "#edf4ff",
             textShadow: "0 0 20px rgba(125,212,160,0.4)",
             margin: 0,
@@ -496,13 +456,13 @@ export function ScreenWonderFlow({
         )}
 
         {/* Cosmic time */}
-        <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.7rem", letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.4, margin: 0, direction: "ltr", textAlign: dir === "rtl" ? "right" : "left" }}>
-          <span style={{ textTransform: "uppercase", letterSpacing: TRACK.caps, fontSize: "0.6em", opacity: 0.7, marginRight: "0.5em" }}>{lbl.cosmicTime}</span>
+        <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "clamp(0.85rem, 3vw, 1rem)", letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.5, margin: 0, direction: "ltr", textAlign: dir === "rtl" ? "right" : "left" }}>
+          <span style={{ textTransform: "uppercase", letterSpacing: TRACK.caps, fontSize: "0.7em", opacity: 0.7, marginRight: "0.5em" }}>{lbl.cosmicTime}</span>
           {cosmicTime.toLocaleString("en-US")}
         </p>
 
         {/* Location · time */}
-        <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.7rem", letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.5, margin: 0, textAlign: dir === "rtl" ? "right" : "left" }}>
+        <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "clamp(0.85rem, 3vw, 1rem)", letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.55, margin: 0, textAlign: dir === "rtl" ? "right" : "left" }}>
           {locationLabel}  ·  {formattedTime}
         </p>
       </div>
