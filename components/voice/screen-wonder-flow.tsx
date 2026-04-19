@@ -59,6 +59,7 @@ const LABELS: Record<Language, {
   amp: string; pitch: string; timbre: string
   cosmicTime: string
   sigPrefix: string
+  remote: string
   saveToArchive: string
   retryError: string
 }> = {
@@ -69,6 +70,7 @@ const LABELS: Record<Language, {
     amp: "BASS", pitch: "MID", timbre: "HIGH",
     cosmicTime:    "COSMIC TIME",
     sigPrefix:     "VOICE #",
+    remote:        "Remote",
     saveToArchive: "SAVE MY SIGNATURE TO THE ARCHIVE",
     retryError:    "Transmission failed. Retrying…",
   },
@@ -79,6 +81,7 @@ const LABELS: Record<Language, {
     amp: "בס", pitch: "אמצע", timbre: "גבוה",
     cosmicTime:    "זמן קוסמי",
     sigPrefix:     "קול מספר ",
+    remote:        "מרחוק",
     saveToArchive: "שמור את חתימתי לארכיון",
     retryError:    "שידור נכשל. מנסה שוב…",
   },
@@ -89,6 +92,7 @@ const LABELS: Record<Language, {
     amp: "باس", pitch: "وسط", timbre: "حاد",
     cosmicTime:    "الزمن الكوني",
     sigPrefix:     "صوت #",
+    remote:        "عن بُعد",
     saveToArchive: "احفظ بصمتي في الأرشيف",
     retryError:    "فشل الإرسال. جارٍ الإعادة…",
   },
@@ -131,7 +135,7 @@ export function ScreenWonderFlow({
 
   const locationLabel = location.sourceType === "exhibition" && location.venueName
     ? location.venueName
-    : [location.city, location.country].filter(Boolean).join(", ") || "Remote"
+    : [location.city, location.country].filter(Boolean).join(", ") || lbl.remote
 
   const [bassE, midE, highE] = deriveEnergies(waveformPeaks)
 
@@ -442,7 +446,7 @@ export function ScreenWonderFlow({
         </div>
       </div>
 
-      {/* Imprint metadata — appears under the HUD, top of screen */}
+      {/* Imprint metadata — top of screen, right-aligned for RTL */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 9, pointerEvents: "none",
         paddingTop: "clamp(5.5rem, 15vw, 7.5rem)",
@@ -451,13 +455,12 @@ export function ScreenWonderFlow({
         opacity: canvasPhase === "imprint" ? 1 : 0,
         transition: "opacity 1.4s ease 2s",
         display: "flex", flexDirection: "column",
-        alignItems: dir === "rtl" ? "flex-end" : "flex-start",
-        gap: "0.85rem",
+        gap: "0.75rem",
       }}>
-        {/* Hz metrics row */}
+        {/* Hz metrics row — all items justified to the correct side */}
         <div style={{
-          display: "flex",
-          flexDirection: dir === "rtl" ? "row-reverse" : "row",
+          display: "flex", flexDirection: "row",
+          justifyContent: dir === "rtl" ? "flex-end" : "flex-start",
           gap: "clamp(1.25rem, 5vw, 2rem)",
         }}>
           {[
@@ -465,43 +468,43 @@ export function ScreenWonderFlow({
             { label: lbl.pitch,  hz: midHz,   color: BAND.pitch },
             { label: lbl.timbre, hz: highHz,  color: BAND.timbre },
           ].map(({ label, hz, color }) => (
-            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: dir === "rtl" ? "right" : "left" }}>
-              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.75 }}>
+            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 3, textAlign: "center" }}>
+              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.65rem", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.75 }}>
                 {label}
               </span>
-              <span style={{ fontFamily: FONT.base, fontWeight: 600, fontSize: "clamp(1rem, 4vw, 1.3rem)", letterSpacing: "-0.01em", color, textShadow: `0 0 14px ${color}70`, direction: "ltr" }}>
+              <span style={{ fontFamily: FONT.base, fontWeight: 600, fontSize: "clamp(0.9rem, 3.5vw, 1.15rem)", letterSpacing: "-0.01em", color, textShadow: `0 0 14px ${color}70`, direction: "ltr" }}>
                 {hz.toLocaleString("en-US")}<span style={{ fontWeight: 300, fontSize: "0.6em", opacity: 0.65, marginLeft: "0.2em" }}>Hz</span>
               </span>
             </div>
           ))}
         </div>
 
-        {/* Signature number — the loop-closure moment */}
+        {/* Signature number */}
         {signatureNumber !== null && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <span style={{
-              fontFamily: FONT.base, fontWeight: 700,
-              fontSize: "clamp(2rem, 8vw, 3rem)",
-              letterSpacing: "-0.02em", lineHeight: 1,
-              color: "#edf4ff",
-              textShadow: "0 0 24px rgba(125,212,160,0.5), 0 0 60px rgba(125,212,160,0.2)",
-              direction: "ltr",
-            }}>
-              {lbl.sigPrefix}{signatureNumber.toLocaleString("en-US")}
-            </span>
-          </div>
+          <p style={{
+            fontFamily: FONT.base, fontWeight: 700,
+            fontSize: "clamp(1.3rem, 5vw, 1.8rem)",
+            letterSpacing: "-0.01em", lineHeight: 1,
+            color: "#edf4ff",
+            textShadow: "0 0 20px rgba(125,212,160,0.4)",
+            margin: 0,
+            textAlign: dir === "rtl" ? "right" : "left",
+            direction: "ltr",
+          }}>
+            {lbl.sigPrefix}{signatureNumber.toLocaleString("en-US")}
+          </p>
         )}
 
-        {/* Cosmic time + location */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: dir === "rtl" ? "right" : "left" }}>
-          <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.55, margin: 0, direction: "ltr" }}>
-            <span style={{ opacity: 0.5, textTransform: "uppercase", letterSpacing: TRACK.caps, fontSize: "0.65em", marginRight: "0.5em" }}>{lbl.cosmicTime}</span>
-            {cosmicTime.toLocaleString("en-US")}
-          </p>
-          <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.75, margin: 0, direction: dir }}>
-            {locationLabel}  ·  {formattedTime}
-          </p>
-        </div>
+        {/* Cosmic time */}
+        <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.7rem", letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.4, margin: 0, direction: "ltr", textAlign: dir === "rtl" ? "right" : "left" }}>
+          <span style={{ textTransform: "uppercase", letterSpacing: TRACK.caps, fontSize: "0.6em", opacity: 0.7, marginRight: "0.5em" }}>{lbl.cosmicTime}</span>
+          {cosmicTime.toLocaleString("en-US")}
+        </p>
+
+        {/* Location · time */}
+        <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.7rem", letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.5, margin: 0, textAlign: dir === "rtl" ? "right" : "left" }}>
+          {locationLabel}  ·  {formattedTime}
+        </p>
       </div>
 
       {/* Error notice — auto-retry or manual retry */}
