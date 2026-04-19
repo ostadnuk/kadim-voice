@@ -16,42 +16,46 @@ const COPY: Record<Language, {
   micTitle: string; allow: string; requesting: string
   blockedTitle: string; blockedBody: string; retry: string; back: string
   ready: string; rec: string; stop: string
+  readyInstruction: string
 }> = {
   en: {
-    micTitle:     "I will present a short text for you to read aloud. When you are ready, press the button below. To do this I need access to your microphone.",
-    allow:        "ALLOW ACCESS",
-    requesting:   "REQUESTING...",
-    blockedTitle: "Microphone blocked.",
-    blockedBody:  "To grant access and continue to the recording, press the button below.",
-    retry:        "TRY AGAIN",
-    back:         "← back",
-    ready:        "VESSEL READY",
-    rec:          "RECEIVING SIGNAL",
-    stop:         "stop recording",
+    micTitle:         "I will present a short text for you to read aloud. When you are ready, press the button below. To do this I need access to your microphone.",
+    allow:            "ALLOW ACCESS",
+    requesting:       "REQUESTING...",
+    blockedTitle:     "Microphone blocked.",
+    blockedBody:      "To grant access and continue to the recording, press the button below.",
+    retry:            "TRY AGAIN",
+    back:             "← back",
+    ready:            "VESSEL READY",
+    rec:              "RECEIVING SIGNAL",
+    stop:             "stop recording",
+    readyInstruction: "I will show you a text to read aloud. When you are ready, press the button to begin.",
   },
   he: {
-    micTitle:     "אציג בפניכם טקסט קצר לקריאה בקול רם. כשתהיו מוכנים, לחצו על הכפתור למטה. לצורך זה נדרשת גישה למיקרופון.",
-    allow:        "לאפשר גישה",
-    requesting:   "מבקש...",
-    blockedTitle: "המיקרופון חסום.",
-    blockedBody:  "כדי לאשר את הגישה ולהמשיך להקלטה, יש ללחוץ על הכפתור.",
-    retry:        "ניסיון נוסף",
-    back:         "← חזרה",
-    ready:        "הכלי מוכן",
-    rec:          "קולט אות",
-    stop:         "סיום הקלטה",
+    micTitle:         "אציג בפניכם טקסט קצר לקריאה בקול רם. כשתהיו מוכנים, לחצו על הכפתור למטה. לצורך זה נדרשת גישה למיקרופון.",
+    allow:            "לאפשר גישה",
+    requesting:       "מבקש...",
+    blockedTitle:     "המיקרופון חסום.",
+    blockedBody:      "כדי לאשר את הגישה ולהמשיך להקלטה, יש ללחוץ על הכפתור.",
+    retry:            "ניסיון נוסף",
+    back:             "← חזרה",
+    ready:            "הכלי מוכן",
+    rec:              "קולט אות",
+    stop:             "סיום הקלטה",
+    readyInstruction: "אציג בפניכם טקסט לקריאה בקול רם. כשתהיו מוכנים, לחצו על הכפתור להתחלה.",
   },
   ar: {
-    micTitle:     "سأعرض عليك نصاً قصيراً لقراءته بصوت عالٍ. حين تكون مستعداً، اضغط الزر أدناه. لهذا أحتاج إذن الوصول إلى الميكروفون.",
-    allow:        "السماح بالوصول",
-    requesting:   "جارٍ الطلب...",
-    blockedTitle: "الميكروفون محظور.",
-    blockedBody:  "لمنح الوصول والمتابعة للتسجيل، اضغط الزر أدناه.",
-    retry:        "المحاولة مجدداً",
-    back:         "← رجوع",
-    ready:        "الوعاء جاهز",
-    rec:          "يستقبل الإشارة",
-    stop:         "إنهاء التسجيل",
+    micTitle:         "سأعرض عليك نصاً قصيراً لقراءته بصوت عالٍ. حين تكون مستعداً، اضغط الزر أدناه. لهذا أحتاج إذن الوصول إلى الميكروفون.",
+    allow:            "السماح بالوصول",
+    requesting:       "جارٍ الطلب...",
+    blockedTitle:     "الميكروفون محظور.",
+    blockedBody:      "لمنح الوصول والمتابعة للتسجيل، اضغط الزر أدناه.",
+    retry:            "المحاولة مجدداً",
+    back:             "← رجوع",
+    ready:            "الوعاء جاهز",
+    rec:              "يستقبل الإشارة",
+    stop:             "إنهاء التسجيل",
+    readyInstruction: "سأعرض عليك نصاً لقراءته بصوت عالٍ. حين تكون مستعداً، اضغط الزر للبدء.",
   },
 }
 
@@ -364,6 +368,28 @@ export function ScreenRecord({ language, onComplete, onBack }: ScreenRecordProps
             {copy.blockedBody}
           </p>
         </div>
+      </div>
+
+      {/* ── Ready instruction — shown after permission granted, before recording ── */}
+      <div style={{
+        position: "fixed",
+        bottom: "calc(max(1.5rem, env(safe-area-inset-bottom)) + 72px + 2.2rem)",
+        left: 0, right: 0,
+        zIndex: 6, pointerEvents: "none",
+        paddingLeft: "clamp(1.25rem, 6vw, 2.5rem)",
+        paddingRight: "clamp(1.25rem, 6vw, 2.5rem)",
+        opacity: showRecordBtn && !isRecording ? 1 : 0,
+        transition: "opacity 0.8s ease",
+      }}>
+        <p style={{
+          fontFamily: FONT.base, fontWeight: 400,
+          fontSize: TYPE.lg, lineHeight: 1.65,
+          color: COLOR.text, opacity: OPACITY.primary,
+          margin: 0, direction: dir,
+          textAlign: dir === "rtl" ? "right" : "left",
+        }}>
+          {copy.readyInstruction}
+        </p>
       </div>
 
       {/* ── Reading text — appears ONLY during recording, anchored above the button ── */}
