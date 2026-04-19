@@ -185,7 +185,7 @@ interface ScreenArchiveProps {
   onBack:         () => void
 }
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 7
 
 export function ScreenArchive({ language = "en", mySignatureId, onBack }: ScreenArchiveProps) {
   const t   = T[language]
@@ -364,24 +364,30 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
 
   // ── LIST VIEW — full-screen scrollable ────────────────────────────────────
   return (
-    <DSShell dir={dir} className="overflow-y-auto">
+    <DSShell dir={dir} className="overflow-y-auto" style={{ paddingBottom: "5rem" }}>
       <style>{STYLES}</style>
 
       <DSTopBar
         left={<DSBack onClick={onBack} />}
-        right={
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ViewToggle
-              view={view}
-              onVessel={() => setView("vessel")}
-              onList={() => setView("list")}
-              labelA={t.viewVessel}
-              labelB={t.viewList}
-            />
-            <WorldClock />
-          </div>
-        }
+        right={<WorldClock />}
       />
+
+      {/* Fixed bottom bar — toggle stays in same position as vessel view */}
+      <div style={{
+        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20,
+        display: "flex", justifyContent: "flex-end", alignItems: "center",
+        padding: "0.75rem clamp(1rem, 5vw, 1.5rem) max(1rem, env(safe-area-inset-bottom))",
+        background: "linear-gradient(to top, rgba(7,12,23,0.95) 0%, rgba(7,12,23,0.7) 100%)",
+        backdropFilter: "blur(4px)",
+      }}>
+        <ViewToggle
+          view={view}
+          onVessel={() => setView("vessel")}
+          onList={() => setView("list")}
+          labelA={t.viewVessel}
+          labelB={t.viewList}
+        />
+      </div>
 
       {/* Section label */}
       <div style={{
@@ -545,11 +551,9 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
 
       {/* Footer */}
       <div style={{
-        padding: "clamp(1.5rem, 5vw, 2.5rem) clamp(1.25rem, 6vw, 2.5rem) clamp(2rem, 8vw, 3rem)",
+        padding: "clamp(1.5rem, 5vw, 2rem) clamp(1.25rem, 6vw, 2.5rem) clamp(1.5rem, 6vw, 2rem)",
         borderTop: "1px solid rgba(255,255,255,0.05)",
-        display: "flex", flexDirection: "column",
-        alignItems: dir === "rtl" ? "flex-end" : "flex-start",
-        gap: 6,
+        display: "flex", justifyContent: "center",
       }}>
         <a
           href="https://www.reactiontime.org"
