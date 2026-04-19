@@ -57,6 +57,7 @@ const STORY_LINES: Record<Language, string[]> = {
 const LABELS: Record<Language, {
   captured: string; transmitting: string; savedHud: string
   amp: string; pitch: string; timbre: string
+  cosmicTime: string
   sigPrefix: string
   saveToArchive: string
   retryError: string
@@ -65,7 +66,8 @@ const LABELS: Record<Language, {
     captured:      "SIGNATURE FORMING",
     transmitting:  "TRANSMITTING SIGNAL",
     savedHud:      "SIGNATURE FORMED",
-    amp: "AMPLITUDE", pitch: "PITCH", timbre: "TIMBRE",
+    amp: "BASS", pitch: "MID", timbre: "HIGH",
+    cosmicTime:    "COSMIC TIME",
     sigPrefix:     "VOICE #",
     saveToArchive: "SAVE MY SIGNATURE TO THE ARCHIVE",
     retryError:    "Transmission failed. Retrying…",
@@ -74,7 +76,8 @@ const LABELS: Record<Language, {
     captured:      "חתימה נוצרת",
     transmitting:  "שידור אות",
     savedHud:      "חתימה נוצרה",
-    amp: "עוצמה", pitch: "גובה", timbre: "גוון",
+    amp: "בס", pitch: "אמצע", timbre: "גבוה",
+    cosmicTime:    "זמן קוסמי",
     sigPrefix:     "קול מספר ",
     saveToArchive: "שמור את חתימתי לארכיון",
     retryError:    "שידור נכשל. מנסה שוב…",
@@ -83,7 +86,8 @@ const LABELS: Record<Language, {
     captured:      "البصمة تتشكّل",
     transmitting:  "إرسال الإشارة",
     savedHud:      "البصمة تشكّلت",
-    amp: "الشدة", pitch: "النبرة", timbre: "الجرس",
+    amp: "باس", pitch: "وسط", timbre: "حاد",
+    cosmicTime:    "الزمن الكوني",
     sigPrefix:     "صوت #",
     saveToArchive: "احفظ بصمتي في الأرشيف",
     retryError:    "فشل الإرسال. جارٍ الإعادة…",
@@ -130,6 +134,11 @@ export function ScreenWonderFlow({
     : [location.city, location.country].filter(Boolean).join(", ") || "Remote"
 
   const [bassE, midE, highE] = deriveEnergies(waveformPeaks)
+
+  // Derive approximate Hz values from energy fractions — unique per voice
+  const bassHz  = Math.round(60   + bassE  * 220)   // ~60–280 Hz
+  const midHz   = Math.round(300  + midE   * 2700)  // ~300–3000 Hz
+  const highHz  = Math.round(3200 + highE  * 8800)  // ~3200–12000 Hz
 
   const [canvasPhase,      setCanvasPhase]      = useState<CanvasPhase>("wonder")
   const [signaturePoints,  setSignaturePoints]  = useState<number[] | null>(null)
@@ -443,25 +452,25 @@ export function ScreenWonderFlow({
         transition: "opacity 1.4s ease 2s",
         display: "flex", flexDirection: "column",
         alignItems: dir === "rtl" ? "flex-end" : "flex-start",
-        gap: "0.55rem",
+        gap: "0.85rem",
       }}>
-        {/* Metrics row */}
+        {/* Hz metrics row */}
         <div style={{
           display: "flex",
           flexDirection: dir === "rtl" ? "row-reverse" : "row",
-          gap: "clamp(1rem, 4vw, 1.75rem)",
+          gap: "clamp(1.25rem, 5vw, 2rem)",
         }}>
           {[
-            { label: lbl.amp,    val: Math.round(bassE * 100), color: BAND.amp },
-            { label: lbl.pitch,  val: Math.round(midE  * 100), color: BAND.pitch },
-            { label: lbl.timbre, val: Math.round(highE * 100), color: BAND.timbre },
-          ].map(({ label, val, color }) => (
-            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.55rem", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.7 }}>
+            { label: lbl.amp,    hz: bassHz,  color: BAND.amp },
+            { label: lbl.pitch,  hz: midHz,   color: BAND.pitch },
+            { label: lbl.timbre, hz: highHz,  color: BAND.timbre },
+          ].map(({ label, hz, color }) => (
+            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: dir === "rtl" ? "right" : "left" }}>
+              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.75 }}>
                 {label}
               </span>
-              <span style={{ fontFamily: FONT.base, fontWeight: 500, fontSize: TYPE.sm, color, textShadow: `0 0 10px ${color}70` }}>
-                {val}%
+              <span style={{ fontFamily: FONT.base, fontWeight: 600, fontSize: "clamp(1rem, 4vw, 1.3rem)", letterSpacing: "-0.01em", color, textShadow: `0 0 14px ${color}70`, direction: "ltr" }}>
+                {hz.toLocaleString("en-US")}<span style={{ fontWeight: 300, fontSize: "0.6em", opacity: 0.65, marginLeft: "0.2em" }}>Hz</span>
               </span>
             </div>
           ))}
@@ -483,12 +492,13 @@ export function ScreenWonderFlow({
           </div>
         )}
 
-        {/* Cosmic + earth time */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {/* Cosmic time + location */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: dir === "rtl" ? "right" : "left" }}>
           <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.55, margin: 0, direction: "ltr" }}>
-            T+ {cosmicTime.toLocaleString("en-US")}
+            <span style={{ opacity: 0.5, textTransform: "uppercase", letterSpacing: TRACK.caps, fontSize: "0.65em", marginRight: "0.5em" }}>{lbl.cosmicTime}</span>
+            {cosmicTime.toLocaleString("en-US")}
           </p>
-          <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.75, margin: 0, direction: "ltr" }}>
+          <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary * 0.75, margin: 0, direction: dir }}>
             {locationLabel}  ·  {formattedTime}
           </p>
         </div>
