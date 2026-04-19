@@ -67,7 +67,7 @@ const LABELS: Record<Language, {
     captured:      "SIGNATURE FORMING",
     transmitting:  "TRANSMITTING SIGNAL",
     savedHud:      "SIGNATURE FORMED",
-    amp: "BASS", pitch: "MID", timbre: "HIGH",
+    amp: "DEPTH", pitch: "TONE", timbre: "CLARITY",
     cosmicTime:    "COSMIC TIME",
     sigPrefix:     "VOICE #",
     remote:        "Remote",
@@ -78,7 +78,7 @@ const LABELS: Record<Language, {
     captured:      "חתימה נוצרת",
     transmitting:  "שידור אות",
     savedHud:      "חתימה נוצרה",
-    amp: "בס", pitch: "אמצע", timbre: "גבוה",
+    amp: "עומק", pitch: "גוון", timbre: "בהירות",
     cosmicTime:    "זמן קוסמי",
     sigPrefix:     "קול מספר ",
     remote:        "מרחוק",
@@ -89,7 +89,7 @@ const LABELS: Record<Language, {
     captured:      "البصمة تتشكّل",
     transmitting:  "إرسال الإشارة",
     savedHud:      "البصمة تشكّلت",
-    amp: "باس", pitch: "وسط", timbre: "حاد",
+    amp: "عمق", pitch: "لون", timbre: "وضوح",
     cosmicTime:    "الزمن الكوني",
     sigPrefix:     "صوت #",
     remote:        "عن بُعد",
@@ -295,80 +295,80 @@ export function ScreenWonderFlow({
         phase={canvasPhase}
       />
 
-      {/* HUD — process states (wonder / transmitting) */}
+      {/* ── TOP RAIL — unified HUD for all phases, same grid as landing ── */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
         paddingTop: "clamp(4.5rem, 13vw, 6rem)",
         paddingLeft: "clamp(1.25rem, 6vw, 2.5rem)",
         paddingRight: "clamp(1.25rem, 6vw, 2.5rem)",
         pointerEvents: "none",
-        display: "flex", flexDirection: "column", gap: "0.35rem",
-        alignItems: dir === "rtl" ? "flex-end" : "flex-start",
-        opacity: canvasPhase === "imprint" ? 0 : 1,
-        transition: "opacity 0.8s ease",
+        display: "flex", flexDirection: "column", gap: "0.4rem",
+        direction: dir,          // RTL-aware: flex-start = reading-start side
       }}>
+
+        {/* Status label — color shifts from amber→green on imprint */}
         <div style={{
           fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs,
           letterSpacing: TRACK.caps, textTransform: "uppercase",
-          color: hudColor, textShadow: hudGlow, opacity: 0.9,
           display: "flex", alignItems: "center", gap: 7,
-          transition: "color 0.8s ease, text-shadow 0.8s ease",
+          color: canvasPhase === "imprint" ? "#7dd4a0" : hudColor,
+          textShadow: canvasPhase === "imprint"
+            ? "0 0 8px rgba(125,212,160,0.6), 0 0 20px rgba(125,212,160,0.28)"
+            : hudGlow,
+          opacity: 0.9,
+          transition: "color 1s ease, text-shadow 1s ease",
         }}>
           {canvasPhase === "transmitting" && (
             <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", display: "inline-block", animation: "rec-dot 1.2s ease-in-out infinite", flexShrink: 0 }} />
           )}
+          {canvasPhase === "imprint" && (
+            <span style={{ width: 4, height: 4, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
+          )}
           {hudLabel}
         </div>
+
+        {/* Duration · location — fades out on imprint */}
         <div style={{
           fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs,
-          letterSpacing: TRACK.sm, color: COLOR.text, opacity: OPACITY.tertiary, direction: "ltr",
+          letterSpacing: TRACK.sm, color: COLOR.text, opacity: canvasPhase === "imprint" ? 0 : OPACITY.tertiary,
+          direction: "ltr", textAlign: dir === "rtl" ? "right" : "left",
+          transition: "opacity 0.8s ease",
         }}>
           {fmtDuration(duration)}  ·  {locationLabel}
         </div>
 
-        {/* Hz metrics — visible during wonder/transmitting */}
+        {/* Hz metrics — always visible (transmitting + imprint), reading-start aligned */}
         <div style={{
           display: "flex", flexDirection: "row",
-          justifyContent: dir === "rtl" ? "flex-end" : "flex-start",
+          justifyContent: "flex-start",   // in RTL context this is right-aligned ✓
           gap: "clamp(1.25rem, 5vw, 2rem)",
-          marginTop: "0.35rem",
+          marginTop: "0.25rem",
         }}>
-          {[
+          {([
             { label: lbl.amp,    hz: bassHz,  color: BAND.amp },
             { label: lbl.pitch,  hz: midHz,   color: BAND.pitch },
             { label: lbl.timbre, hz: highHz,  color: BAND.timbre },
-          ].map(({ label, hz, color }) => (
-            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2, textAlign: "center" }}>
-              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "0.65rem", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.75 }}>
+          ] as const).map(({ label, hz, color }) => (
+            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <span style={{
+                fontFamily: FONT.base, fontWeight: 300,
+                fontSize: "clamp(0.6rem, 2vw, 0.72rem)",
+                letterSpacing: TRACK.caps, textTransform: "uppercase",
+                color, opacity: 0.7,
+              }}>
                 {label}
               </span>
-              <span style={{ fontFamily: FONT.base, fontWeight: 600, fontSize: "clamp(1rem, 3.8vw, 1.2rem)", letterSpacing: "-0.01em", color, textShadow: `0 0 14px ${color}70`, direction: "ltr" }}>
-                {hz.toLocaleString("en-US")}<span style={{ fontWeight: 300, fontSize: "0.6em", opacity: 0.65, marginLeft: "0.2em" }}>Hz</span>
+              <span style={{
+                fontFamily: FONT.base, fontWeight: 600,
+                fontSize: "clamp(1rem, 3.8vw, 1.25rem)",
+                letterSpacing: "-0.01em", color,
+                textShadow: `0 0 14px ${color}70`,
+                direction: "ltr",
+              }}>
+                {hz.toLocaleString("en-US")}<span style={{ fontWeight: 300, fontSize: "0.6em", opacity: 0.6, marginLeft: "0.2em" }}>Hz</span>
               </span>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Imprint top indicator — replaces HUD when pattern is revealed */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
-        paddingTop: "max(1.25rem, calc(env(safe-area-inset-top) + 0.5rem))",
-        paddingLeft: "clamp(1.25rem, 6vw, 2.5rem)",
-        paddingRight: "clamp(1.25rem, 6vw, 2.5rem)",
-        pointerEvents: "none",
-        opacity: canvasPhase === "imprint" ? 1 : 0,
-        transition: "opacity 1s ease 1.5s",
-      }}>
-        <div style={{
-          fontFamily: FONT.base, fontWeight: 300, fontSize: TYPE.xs,
-          letterSpacing: TRACK.caps, textTransform: "uppercase",
-          color: "#7dd4a0",
-          textShadow: "0 0 8px rgba(125,212,160,0.6), 0 0 20px rgba(125,212,160,0.28)",
-          display: "flex", alignItems: "center", gap: 7,
-        }}>
-          <span style={{ width: 4, height: 4, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
-          {lbl.savedHud}
         </div>
       </div>
 
@@ -406,63 +406,54 @@ export function ScreenWonderFlow({
         </div>
       </div>
 
-      {/* Imprint metadata — top of screen, right-aligned for RTL */}
+      {/* ── BOTTOM READOUT — mirrors landing RA/DEC/VEL zone ── */}
+      {/* Signature breathes free in center; data anchors to bottom corner    */}
       <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, zIndex: 9, pointerEvents: "none",
-        paddingTop: "clamp(5.5rem, 15vw, 7.5rem)",
+        position: "absolute", bottom: "clamp(5.5rem, 18vw, 7.5rem)",
+        left: 0, right: 0, zIndex: 9, pointerEvents: "none",
         paddingLeft: "clamp(1.25rem, 6vw, 2.5rem)",
         paddingRight: "clamp(1.25rem, 6vw, 2.5rem)",
+        display: "flex", flexDirection: "column",
+        direction: dir,              // cascade RTL; flex-start = reading-start
+        alignItems: "flex-start",   // reading-start side (right in RTL, left in LTR)
+        gap: "0.45rem",
         opacity: canvasPhase === "imprint" ? 1 : 0,
         transition: "opacity 1.4s ease 2s",
-        display: "flex", flexDirection: "column",
-        gap: "0.75rem",
       }}>
-        {/* Hz metrics row — all items justified to the correct side */}
-        <div style={{
-          display: "flex", flexDirection: "row",
-          justifyContent: dir === "rtl" ? "flex-end" : "flex-start",
-          gap: "clamp(1.25rem, 5vw, 2rem)",
-        }}>
-          {[
-            { label: lbl.amp,    hz: bassHz,  color: BAND.amp },
-            { label: lbl.pitch,  hz: midHz,   color: BAND.pitch },
-            { label: lbl.timbre, hz: highHz,  color: BAND.timbre },
-          ].map(({ label, hz, color }) => (
-            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "center" }}>
-              <span style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "clamp(0.65rem, 2.2vw, 0.8rem)", letterSpacing: TRACK.caps, textTransform: "uppercase", color, opacity: 0.75 }}>
-                {label}
-              </span>
-              <span style={{ fontFamily: FONT.base, fontWeight: 600, fontSize: "clamp(1.15rem, 4.5vw, 1.5rem)", letterSpacing: "-0.01em", color, textShadow: `0 0 14px ${color}70`, direction: "ltr" }}>
-                {hz.toLocaleString("en-US")}<span style={{ fontWeight: 300, fontSize: "0.6em", opacity: 0.65, marginLeft: "0.2em" }}>Hz</span>
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Signature number */}
+        {/* Signature number — hero line, like the voice-count on the landing */}
         {signatureNumber !== null && (
           <p style={{
             fontFamily: FONT.base, fontWeight: 700,
-            fontSize: "clamp(1.8rem, 7vw, 2.6rem)",
+            fontSize: "clamp(2rem, 8vw, 3rem)",
             letterSpacing: "-0.02em", lineHeight: 1,
             color: "#edf4ff",
-            textShadow: "0 0 20px rgba(125,212,160,0.4)",
-            margin: 0,
-            textAlign: dir === "rtl" ? "right" : "left",
-            direction: "ltr",
+            textShadow: "0 0 24px rgba(125,212,160,0.35)",
+            margin: 0, direction: "ltr",
           }}>
             {lbl.sigPrefix}{signatureNumber.toLocaleString("en-US")}
           </p>
         )}
 
-        {/* Cosmic time */}
-        <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "clamp(0.85rem, 3vw, 1rem)", letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.5, margin: 0, direction: "ltr", textAlign: dir === "rtl" ? "right" : "left" }}>
-          <span style={{ textTransform: "uppercase", letterSpacing: TRACK.caps, fontSize: "0.7em", opacity: 0.7, marginRight: "0.5em" }}>{lbl.cosmicTime}</span>
+        {/* Cosmic time — like RA (right ascension) readout */}
+        <p style={{
+          fontFamily: FONT.base, fontWeight: 300,
+          fontSize: "clamp(0.8rem, 2.8vw, 0.95rem)",
+          letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.45,
+          margin: 0, direction: "ltr",
+        }}>
+          <span style={{ textTransform: "uppercase", letterSpacing: TRACK.caps, fontSize: "0.78em", opacity: 0.65, marginRight: "0.5em" }}>
+            {lbl.cosmicTime}
+          </span>
           {cosmicTime.toLocaleString("en-US")}
         </p>
 
-        {/* Location · time */}
-        <p style={{ fontFamily: FONT.base, fontWeight: 300, fontSize: "clamp(0.85rem, 3vw, 1rem)", letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.55, margin: 0, textAlign: dir === "rtl" ? "right" : "left" }}>
+        {/* Location · timestamp — like DEC/VEL readout */}
+        <p style={{
+          fontFamily: FONT.base, fontWeight: 300,
+          fontSize: "clamp(0.8rem, 2.8vw, 0.95rem)",
+          letterSpacing: TRACK.sm, color: COLOR.text, opacity: 0.5,
+          margin: 0, direction: "ltr",
+        }}>
           {locationLabel}  ·  {formattedTime}
         </p>
       </div>
