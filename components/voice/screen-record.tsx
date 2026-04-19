@@ -19,7 +19,7 @@ const COPY: Record<Language, {
   readyInstruction: string
 }> = {
   en: {
-    micTitle:         "I will present a short text for you to read aloud. When you are ready, press the button below. To do this I need access to your microphone.",
+    micTitle:         "Your voice carries a signature unlike any other. To capture it, I need access to your microphone.",
     allow:            "ALLOW ACCESS",
     requesting:       "REQUESTING...",
     blockedTitle:     "Microphone blocked.",
@@ -29,10 +29,10 @@ const COPY: Record<Language, {
     ready:            "VESSEL READY",
     rec:              "RECEIVING SIGNAL",
     stop:             "stop recording",
-    readyInstruction: "I will show you a text to read aloud. When you are ready, press the button to begin.",
+    readyInstruction: "I'll show you a short text to read aloud. Press the button when you're ready.",
   },
   he: {
-    micTitle:         "אציג בפניכם טקסט קצר לקריאה בקול רם. כשתהיו מוכנים, לחצו על הכפתור למטה. לצורך זה נדרשת גישה למיקרופון.",
+    micTitle:         "קולך נושא חתימה שאינה דומה לשום קול אחר. כדי ללכוד אותה, נדרשת גישה למיקרופון שלך.",
     allow:            "לאפשר גישה",
     requesting:       "מבקש...",
     blockedTitle:     "המיקרופון חסום.",
@@ -42,10 +42,10 @@ const COPY: Record<Language, {
     ready:            "הכלי מוכן",
     rec:              "קולט אות",
     stop:             "סיום הקלטה",
-    readyInstruction: "אציג בפניכם טקסט לקריאה בקול רם. כשתהיו מוכנים, לחצו על הכפתור להקלטה.",
+    readyInstruction: "אציג לך טקסט קצר לקריאה בקול רם. לחץ על הכפתור כשאתה מוכן.",
   },
   ar: {
-    micTitle:         "سأعرض عليك نصاً قصيراً لقراءته بصوت عالٍ. حين تكون مستعداً، اضغط الزر أدناه. لهذا أحتاج إذن الوصول إلى الميكروفون.",
+    micTitle:         "صوتك يحمل بصمة لا تشبه أي صوت آخر. لالتقاطها، أحتاج إذن الوصول إلى الميكروفون.",
     allow:            "السماح بالوصول",
     requesting:       "جارٍ الطلب...",
     blockedTitle:     "الميكروفون محظور.",
@@ -55,7 +55,7 @@ const COPY: Record<Language, {
     ready:            "الوعاء جاهز",
     rec:              "يستقبل الإشارة",
     stop:             "إنهاء التسجيل",
-    readyInstruction: "سأعرض عليك نصاً لقراءته بصوت عالٍ. حين تكون مستعداً، اضغط الزر للبدء.",
+    readyInstruction: "سأعرض عليك نصاً قصيراً لقراءته بصوت عالٍ. اضغط الزر حين تكون مستعداً.",
   },
 }
 

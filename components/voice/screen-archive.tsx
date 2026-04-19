@@ -21,27 +21,31 @@ const ArchiveCanvasDynamic = dynamic(
 // ── i18n ──────────────────────────────────────────────────────────────────────
 
 const T: Record<Language, {
-  voices: (n: number) => string
+  voices:        (n: number) => string
   collectiveSub: string
-  arrival: string
-  individuals: string
-  loading: string
-  noEntries: string
-  prev: string
-  next: string
-  sigLabel: string
-  timestamp: string
-  location: string
-  duration: string
-  source: string
-  remote: string
-  dateLocale: string
-  footer: string
+  arrival:       string
+  viewVessel:    string
+  viewList:      string
+  individuals:   string
+  loading:       string
+  noEntries:     string
+  prev:          string
+  next:          string
+  sigLabel:      string
+  timestamp:     string
+  location:      string
+  duration:      string
+  source:        string
+  remote:        string
+  dateLocale:    string
+  footer:        string
 }> = {
   en: {
     voices:        (n) => `${n.toLocaleString()} ${n === 1 ? "voice" : "voices"}`,
     collectiveSub: "The sum of every voice recorded into Kadim",
     arrival:       "Your signature joins the vessel",
+    viewVessel:    "VESSEL",
+    viewList:      "VOICES",
     individuals:   "INDIVIDUAL SIGNATURES",
     loading:       "LOADING...",
     noEntries:     "NO ENTRIES YET",
@@ -60,6 +64,8 @@ const T: Record<Language, {
     voices:        (n) => `${n.toLocaleString()} ${n === 1 ? "קול" : "קולות"}`,
     collectiveSub: "סכום כל הקולות שנקלטו בקדים",
     arrival:       "חתימתך מצטרפת לכלי",
+    viewVessel:    "כלי",
+    viewList:      "קולות",
     individuals:   "חתימות אישיות",
     loading:       "טוען...",
     noEntries:     "אין רשומות עדיין",
@@ -78,6 +84,8 @@ const T: Record<Language, {
     voices:        (n) => `${n.toLocaleString()} أصوات`,
     collectiveSub: "مجموع كل الأصوات المسجَّلة في قديم",
     arrival:       "توقيعك ينضمّ إلى الإناء",
+    viewVessel:    "الإناء",
+    viewList:      "أصوات",
     individuals:   "التوقيعات الفردية",
     loading:       "جارٍ التحميل...",
     noEntries:     "لا توجد تسجيلات بعد",
@@ -110,6 +118,54 @@ function WorldClock() {
   )
 }
 
+// ── Toggle pill ───────────────────────────────────────────────────────────────
+
+function ViewToggle({
+  view, onToggle, labelA, labelB,
+}: {
+  view: "vessel" | "list"
+  onToggle: () => void
+  labelA: string
+  labelB: string
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{
+        display: "flex", alignItems: "center",
+        background: "rgba(200,212,248,0.07)",
+        border: "1px solid rgba(200,212,248,0.14)",
+        borderRadius: 20,
+        padding: "4px 3px",
+        gap: 2,
+        cursor: "pointer",
+        WebkitTapHighlightColor: "transparent",
+      }}
+    >
+      {(["vessel", "list"] as const).map(v => (
+        <span
+          key={v}
+          style={{
+            fontFamily: FONT.base,
+            fontSize: "0.6rem",
+            letterSpacing: TRACK.caps,
+            fontWeight: 400,
+            padding: "4px 10px",
+            borderRadius: 14,
+            color: view === v ? COLOR.bg : COLOR.secondary,
+            background: view === v ? "rgba(200,212,248,0.85)" : "transparent",
+            opacity: view === v ? 1 : 0.45,
+            transition: "all 0.25s ease",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {v === "vessel" ? labelA : labelB}
+        </span>
+      ))}
+    </button>
+  )
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 interface ScreenArchiveProps {
@@ -124,11 +180,13 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
   const t   = T[language]
   const dir = (language === "en" ? "ltr" : "rtl") as "ltr" | "rtl"
 
+  // View mode
+  const [view, setView] = useState<"vessel" | "list">("vessel")
+
   // Arrival text — fades in immediately, fades out after 5s
   const [arrivalPhase, setArrivalPhase] = useState<"in" | "out">("in")
   const arrivalRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    // Show for 4.5s then fade out — timed to roughly match particle settling
     arrivalRef.current = setTimeout(() => setArrivalPhase("out"), 4500)
     return () => { if (arrivalRef.current) clearTimeout(arrivalRef.current) }
   }, [])
@@ -182,47 +240,55 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
   const totalPages = Math.ceil(total / PAGE_SIZE)
   const globalOffset = (page - 1) * PAGE_SIZE
 
-  return (
-    <DSShell dir={dir} className="overflow-y-auto">
-      <style>{`
-        @keyframes my-entry-glow {
-          0%   { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.6), 0 0 24px rgba(125,212,160,0.2); }
-          60%  { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.4), 0 0 16px rgba(125,212,160,0.12); }
-          100% { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.0), 0 0 0px rgba(125,212,160,0.0); }
-        }
-        @keyframes arrival-pulse {
-          0%   { opacity: 0; transform: translateY(6px); }
-          20%  { opacity: 1; transform: translateY(0); }
-          75%  { opacity: 1; }
-          100% { opacity: 0; }
-        }
-      `}</style>
+  // ── Shared animations ─────────────────────────────────────────────────────
+  const STYLES = `
+    @keyframes my-entry-glow {
+      0%   { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.6), 0 0 24px rgba(125,212,160,0.2); }
+      60%  { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.4), 0 0 16px rgba(125,212,160,0.12); }
+      100% { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.0), 0 0 0px rgba(125,212,160,0.0); }
+    }
+    @keyframes arrival-pulse {
+      0%   { opacity: 0; transform: translateY(6px); }
+      20%  { opacity: 1; transform: translateY(0); }
+      75%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  `
 
-      <DSTopBar
-        left={<DSBack onClick={onBack} />}
-        right={<WorldClock />}
-      />
+  // ── VESSEL VIEW — full-screen 3D canvas ───────────────────────────────────
+  if (view === "vessel") {
+    return (
+      <DSShell dir={dir} style={{ overflow: "hidden" }}>
+        <style>{STYLES}</style>
 
-      {/* ── Collective vessel — tall, full-bleed, inside perspective ──────── */}
-      <div style={{
-        position:   "relative",
-        width:      "100%",
-        height:     "75svh",
-        minHeight:  380,
-        background: COLOR.bg,
-        flexShrink: 0,
-      }}>
-        {collectiveSig ? (
-          <ArchiveCanvasDynamic signaturePoints={collectiveSig} mySignatureId={mySignatureId} />
-        ) : (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color: COLOR.secondary, opacity: 0.3 }}>
-              …
-            </span>
-          </div>
-        )}
+        {/* Full-bleed canvas */}
+        <div style={{ position: "absolute", inset: 0, background: COLOR.bg }}>
+          {collectiveSig ? (
+            <ArchiveCanvasDynamic signaturePoints={collectiveSig} mySignatureId={mySignatureId} />
+          ) : (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color: COLOR.secondary, opacity: 0.25 }}>…</span>
+            </div>
+          )}
+        </div>
 
-        {/* Arrival phrase — only shown when mySignatureId exists (user just recorded) */}
+        {/* Top bar — floats over canvas */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "max(1.2rem, env(safe-area-inset-top)) clamp(1rem, 5vw, 2rem) 0.75rem",
+        }}>
+          <DSBack onClick={onBack} />
+          <ViewToggle
+            view={view}
+            onToggle={() => setView("list")}
+            labelA={t.viewVessel}
+            labelB={t.viewList}
+          />
+          <WorldClock />
+        </div>
+
+        {/* Arrival phrase */}
         {mySignatureId && (
           <div style={{
             position: "absolute",
@@ -249,21 +315,23 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
           </div>
         )}
 
-        {/* Bottom overlay: count + sub-label — clear of TopBar */}
+        {/* Bottom overlay: count */}
         <div style={{
-          position: "absolute", bottom: "clamp(1.25rem, 4vw, 2rem)",
-          left: "clamp(1.25rem, 6vw, 2.5rem)", right: "clamp(1.25rem, 6vw, 2.5rem)",
-          pointerEvents: "none",
+          position: "absolute",
+          bottom: "clamp(1.5rem, 5vw, 2.5rem)",
+          left: "clamp(1.25rem, 6vw, 2.5rem)",
+          right: "clamp(1.25rem, 6vw, 2.5rem)",
+          pointerEvents: "none", zIndex: 5,
           display: "flex", flexDirection: "column",
           alignItems: dir === "rtl" ? "flex-end" : "flex-start",
-          gap: 4,
+          gap: 3,
         }}>
           <div style={{
             fontFamily: FONT.base, fontWeight: 700,
             fontSize: "clamp(2.8rem, 11vw, 4.5rem)",
             letterSpacing: "-0.03em",
             color: COLOR.text, lineHeight: 1,
-            opacity: collectiveSig ? 1 : 0,
+            opacity: collectiveSig ? 0.9 : 0,
             transition: "opacity 1.2s ease",
           }}>
             {collectiveTotal.toLocaleString()}
@@ -271,7 +339,7 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
           <div style={{
             fontFamily: FONT.base, fontWeight: 300,
             fontSize: TYPE.xs, letterSpacing: TRACK.caps,
-            color: "#c8d4f8", opacity: 0.5,
+            color: "#c8d4f8", opacity: 0.45,
             textTransform: "uppercase",
           }}>
             {t.voices(collectiveTotal)}
@@ -279,178 +347,195 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
           <div style={{
             fontFamily: FONT.base, fontWeight: 300,
             fontSize: TYPE.hud, letterSpacing: TRACK.sm,
-            color: COLOR.text, opacity: OPACITY.tertiary * 0.6,
+            color: COLOR.text, opacity: OPACITY.tertiary * 0.55,
             marginTop: 2,
           }}>
             {t.collectiveSub}
           </div>
         </div>
+      </DSShell>
+    )
+  }
+
+  // ── LIST VIEW — full-screen scrollable ────────────────────────────────────
+  return (
+    <DSShell dir={dir} className="overflow-y-auto">
+      <style>{STYLES}</style>
+
+      <DSTopBar
+        left={<DSBack onClick={onBack} />}
+        center={
+          <ViewToggle
+            view={view}
+            onToggle={() => setView("vessel")}
+            labelA={t.viewVessel}
+            labelB={t.viewList}
+          />
+        }
+        right={<WorldClock />}
+      />
+
+      {/* Section label */}
+      <div style={{
+        padding: "clamp(1rem, 4vw, 1.5rem) clamp(1.25rem, 6vw, 2.5rem) 0.5rem",
+        fontFamily: FONT.base, fontWeight: 300,
+        fontSize: TYPE.hud, letterSpacing: TRACK.caps,
+        color: COLOR.secondary, opacity: 0.35,
+        textTransform: "uppercase",
+      }}>
+        {t.individuals}
       </div>
 
-      {/* ── Individual signatures — elegant list ─────────────────────────── */}
-      <div style={{ paddingBottom: "4rem" }}>
-
-        {/* Section label */}
-        <div style={{
-          padding: "clamp(1rem, 4vw, 1.5rem) clamp(1.25rem, 6vw, 2.5rem) 0.5rem",
-          fontFamily: FONT.base, fontWeight: 300,
-          fontSize: TYPE.hud, letterSpacing: TRACK.caps,
-          color: COLOR.secondary, opacity: 0.4,
-          textTransform: "uppercase",
-        }}>
-          {t.individuals}
+      {/* List */}
+      {loading ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
+          <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.secondary, opacity: 0.4 }}>
+            {t.loading}
+          </span>
         </div>
-
-        {loading ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
-            <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.sm, color: COLOR.secondary, opacity: 0.4 }}>
-              {t.loading}
-            </span>
-          </div>
-        ) : entries.length === 0 ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
-            <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color: COLOR.secondary, opacity: 0.4 }}>
-              {t.noEntries}
-            </span>
-          </div>
-        ) : (
-          <>
-            {entries.map((entry, idx) => {
-              const num    = String(globalOffset + idx + 1).padStart(2, "0")
-              const isMine = mySignatureId && entry.id === mySignatureId
-              return (
-                <button
-                  key={entry.id}
-                  onClick={() => setSelectedEntry(entry)}
-                  style={{
-                    width: "100%", background: "none", border: "none",
-                    cursor: "pointer",
-                    padding: "0 clamp(1.25rem, 6vw, 2.5rem)",
-                    WebkitTapHighlightColor: "transparent",
-                    ...(isMine ? { animation: "my-entry-glow 3.5s ease-out forwards" } : {}),
-                  }}
-                >
-                  <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
-                  <div style={{
-                    display: "flex", alignItems: "center",
-                    flexDirection: dir === "rtl" ? "row-reverse" : "row",
-                    gap: "clamp(0.9rem, 3.5vw, 1.25rem)",
-                    padding: "clamp(0.8rem, 3vw, 1rem) 0",
+      ) : entries.length === 0 ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
+          <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color: COLOR.secondary, opacity: 0.4 }}>
+            {t.noEntries}
+          </span>
+        </div>
+      ) : (
+        <>
+          {entries.map((entry, idx) => {
+            const num    = String(globalOffset + idx + 1).padStart(2, "0")
+            const isMine = mySignatureId && entry.id === mySignatureId
+            return (
+              <button
+                key={entry.id}
+                onClick={() => setSelectedEntry(entry)}
+                style={{
+                  width: "100%", background: "none", border: "none",
+                  cursor: "pointer",
+                  padding: "0 clamp(1.25rem, 6vw, 2.5rem)",
+                  WebkitTapHighlightColor: "transparent",
+                  ...(isMine ? { animation: "my-entry-glow 3.5s ease-out forwards" } : {}),
+                }}
+              >
+                <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
+                <div style={{
+                  display: "flex", alignItems: "center",
+                  flexDirection: dir === "rtl" ? "row-reverse" : "row",
+                  gap: "clamp(0.9rem, 3.5vw, 1.25rem)",
+                  padding: "clamp(0.8rem, 3vw, 1rem) 0",
+                }}>
+                  {/* Index */}
+                  <span style={{
+                    fontFamily: FONT.base, fontWeight: 300,
+                    fontSize: "0.65rem", letterSpacing: TRACK.caps,
+                    color: COLOR.secondary, opacity: 0.3,
+                    flexShrink: 0, minWidth: 22,
+                    textAlign: dir === "rtl" ? "right" : "left",
+                    direction: "ltr",
                   }}>
-                    {/* Index */}
+                    {num}
+                  </span>
+
+                  {/* Thumbnail */}
+                  <div style={{
+                    width: 56, height: 56, flexShrink: 0,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <ChladniThumbnail
+                      signaturePoints={entry.signaturePoints}
+                      size={56}
+                      gridSize={48}
+                    />
+                  </div>
+
+                  {/* Text */}
+                  <div style={{
+                    flex: 1, display: "flex", flexDirection: "column", gap: 4,
+                    textAlign: dir === "rtl" ? "right" : "left",
+                    overflow: "hidden",
+                  }}>
                     <span style={{
-                      fontFamily: FONT.base, fontWeight: 300,
-                      fontSize: "0.65rem", letterSpacing: TRACK.caps,
-                      color: COLOR.secondary, opacity: 0.3,
-                      flexShrink: 0, minWidth: 22,
-                      textAlign: dir === "rtl" ? "right" : "left",
-                      direction: "ltr",
+                      fontFamily: FONT.base, fontWeight: 400,
+                      fontSize: TYPE.sm,
+                      color: COLOR.text, opacity: OPACITY.secondary,
+                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     }}>
-                      {num}
+                      {locLabel(entry)}
                     </span>
-
-                    {/* Thumbnail — no background, just the pattern on dark */}
-                    <div style={{
-                      width: 56, height: 56, flexShrink: 0,
-                      borderRadius: "50%",
-                      overflow: "hidden",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <ChladniThumbnail
-                        signaturePoints={entry.signaturePoints}
-                        size={56}
-                        gridSize={48}
-                      />
-                    </div>
-
-                    {/* Text */}
-                    <div style={{
-                      flex: 1, display: "flex", flexDirection: "column", gap: 4,
-                      textAlign: dir === "rtl" ? "right" : "left",
-                      overflow: "hidden",
-                    }}>
-                      <span style={{
-                        fontFamily: FONT.base, fontWeight: 400,
-                        fontSize: TYPE.sm,
-                        color: COLOR.text, opacity: OPACITY.secondary,
-                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                      }}>
-                        {locLabel(entry)}
-                      </span>
-                      <span style={{
-                        fontFamily: FONT.base, fontWeight: 300,
-                        fontSize: TYPE.hud, letterSpacing: TRACK.sm,
-                        color: COLOR.secondary, opacity: 0.4,
-                        direction: "ltr", textAlign: dir === "rtl" ? "right" : "left",
-                      }}>
-                        {fmtDate(entry.createdAt)} · {fmtTime(entry.createdAt)}
-                      </span>
-                    </div>
-
-                    {/* Duration */}
                     <span style={{
                       fontFamily: FONT.base, fontWeight: 300,
-                      fontSize: TYPE.hud, letterSpacing: TRACK.caps,
-                      color: COLOR.secondary, opacity: 0.28,
-                      flexShrink: 0, direction: "ltr",
+                      fontSize: TYPE.hud, letterSpacing: TRACK.sm,
+                      color: COLOR.secondary, opacity: 0.4,
+                      direction: "ltr", textAlign: dir === "rtl" ? "right" : "left",
                     }}>
-                      {entry.durationSec}s
+                      {fmtDate(entry.createdAt)} · {fmtTime(entry.createdAt)}
                     </span>
                   </div>
-                </button>
-              )
-            })}
 
-            {/* Bottom divider */}
-            <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "0 clamp(1.25rem, 6vw, 2.5rem)" }} />
-
-            {/* Pagination — minimal page indicator */}
-            {totalPages > 1 && (
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 0, marginTop: 32, marginBottom: 8,
-              }}>
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  style={{
-                    background: "none", border: "none", fontFamily: FONT.base,
-                    fontSize: TYPE.sm, color: COLOR.text,
-                    opacity: page === 1 ? 0.15 : 0.55,
-                    cursor: page === 1 ? "default" : "pointer",
-                    minHeight: TOUCH_MIN, minWidth: TOUCH_MIN,
-                    display: "flex", alignItems: "center", justifyContent: "center",
+                  {/* Duration */}
+                  <span style={{
+                    fontFamily: FONT.base, fontWeight: 300,
+                    fontSize: TYPE.hud, letterSpacing: TRACK.caps,
+                    color: COLOR.secondary, opacity: 0.28,
+                    flexShrink: 0, direction: "ltr",
                   }}>
-                  {t.prev}
-                </button>
-                <span style={{
-                  fontFamily: FONT.base, fontWeight: 300,
-                  fontSize: TYPE.hud, letterSpacing: TRACK.caps,
-                  color: COLOR.secondary, opacity: 0.35,
-                  minWidth: 64, textAlign: "center",
+                    {entry.durationSec}s
+                  </span>
+                </div>
+              </button>
+            )
+          })}
+
+          {/* Bottom divider */}
+          <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "0 clamp(1.25rem, 6vw, 2.5rem)" }} />
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: 0, marginTop: 32, marginBottom: 8,
+            }}>
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                style={{
+                  background: "none", border: "none", fontFamily: FONT.base,
+                  fontSize: TYPE.sm, color: COLOR.text,
+                  opacity: page === 1 ? 0.15 : 0.55,
+                  cursor: page === 1 ? "default" : "pointer",
+                  minHeight: TOUCH_MIN, minWidth: TOUCH_MIN,
+                  display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  {String(page).padStart(2,"0")} / {String(totalPages).padStart(2,"0")}
-                </span>
-                <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  style={{
-                    background: "none", border: "none", fontFamily: FONT.base,
-                    fontSize: TYPE.sm, color: COLOR.text,
-                    opacity: page === totalPages ? 0.15 : 0.55,
-                    cursor: page === totalPages ? "default" : "pointer",
-                    minHeight: TOUCH_MIN, minWidth: TOUCH_MIN,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                  {t.next}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+                {t.prev}
+              </button>
+              <span style={{
+                fontFamily: FONT.base, fontWeight: 300,
+                fontSize: TYPE.hud, letterSpacing: TRACK.caps,
+                color: COLOR.secondary, opacity: 0.35,
+                minWidth: 64, textAlign: "center",
+              }}>
+                {String(page).padStart(2,"0")} / {String(totalPages).padStart(2,"0")}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                style={{
+                  background: "none", border: "none", fontFamily: FONT.base,
+                  fontSize: TYPE.sm, color: COLOR.text,
+                  opacity: page === totalPages ? 0.15 : 0.55,
+                  cursor: page === totalPages ? "default" : "pointer",
+                  minHeight: TOUCH_MIN, minWidth: TOUCH_MIN,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                {t.next}
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
-      {/* ── Footer ───────────────────────────────────────────────────────────── */}
+      {/* Footer */}
       <div style={{
         padding: "clamp(1.5rem, 5vw, 2.5rem) clamp(1.25rem, 6vw, 2.5rem) clamp(2rem, 8vw, 3rem)",
         borderTop: "1px solid rgba(255,255,255,0.05)",
@@ -475,7 +560,7 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
         </a>
       </div>
 
-      {/* ── Entry detail dialog ───────────────────────────────────────────── */}
+      {/* Entry detail dialog */}
       <Dialog open={!!selectedEntry} onOpenChange={() => setSelectedEntry(null)}>
         {selectedEntry && (
           <DialogContent style={{
@@ -489,19 +574,13 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
               </DialogDescription>
             </DialogHeader>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-              {/* Signature label */}
               <span style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.caps, color: "#c8d4f8", opacity: 0.5 }}>
                 {t.sigLabel}
               </span>
-
-              {/* Large Chladni pattern */}
               <div style={{ width: 200, height: 200, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                 <ChladniThumbnail signaturePoints={selectedEntry.signaturePoints} size={200} gridSize={160} />
               </div>
-
               <DSDivider opacity={0.08} />
-
-              {/* Metadata */}
               <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
                   { label: t.timestamp, value: `${fmtDate(selectedEntry.createdAt)}  ${fmtTime(selectedEntry.createdAt)}` },

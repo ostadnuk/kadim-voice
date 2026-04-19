@@ -1,20 +1,29 @@
 "use client"
 
 /**
- * ChladniThumbnail — fast 2D raster render of a voice's Chladni nodal-line pattern.
- * Uses a grid evaluation (no rejection sampling) so it's synchronous and cheap.
- * Suitable for rendering dozens of thumbnails in a list.
+ * ChladniThumbnail — point-cloud render of a voice's Chladni nodal pattern.
+ *
+ * Uses the same buildChladniPositions rejection-sampling algorithm as the
+ * imprint canvas, then renders dots with additive blending — so thumbnails
+ * look like a miniature version of the actual signature, not a field map.
  */
 
 import { useEffect, useRef } from "react"
-import { buildChladniRaster } from "@/lib/chladni"
+import { buildChladniPositions } from "@/lib/chladni"
 
 interface ChladniThumbnailProps {
   signaturePoints: number[]
-  size?: number          // CSS display size in px (default 88)
-  gridSize?: number      // internal raster resolution (default 72)
-  /** Highlight color in r,g,b (default cool blue-white 200,212,248) */
+  size?:           number           // CSS display size in px (default 88)
+  gridSize?:       number           // internal raster resolution (default 72)
+  /** Highlight color [r, g, b] (default cool blue-white 200,212,248) */
   color?: [number, number, number]
+}
+
+// Point counts — small canvas needs fewer points, large dialog needs more
+function nForSize(gridSize: number) {
+  if (gridSize <= 56)  return 1_800
+  if (gridSize <= 100) return 3_500
+  return 8_000
 }
 
 export function ChladniThumbnail({
@@ -31,31 +40,62 @@ export function ChladniThumbnail({
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    canvas.width  = gridSize
-    canvas.height = gridSize
+    const res = gridSize
+    canvas.width  = res
+    canvas.height = res
 
-    const field = buildChladniRaster(signaturePoints, gridSize)
+    // ── Background ────────────────────────────────────────────────────────────
+    ctx.fillStyle = "#070c17"
+    ctx.fillRect(0, 0, res, res)
 
-    const imageData = ctx.createImageData(gridSize, gridSize)
+    // ── Build point cloud (same algorithm as imprint canvas) ──────────────────
+    const N   = nForSize(gridSize)
+    const pts = buildChladniPositions(signaturePoints, N)
+    const R   = 2.3   // coordinate range used by buildChladniPositions
+
     const [r, g, b] = color
+    const cx  = res / 2
+    const cy  = res / 2
+    const rad = res / 2  // circle clip radius
+    const dotR = Math.max(0.55, res / 52)
 
-    for (let i = 0; i < gridSize * gridSize; i++) {
-      const v = field[i]
-      const idx = i * 4
-      if (v < 0) {
-        // Outside circle — transparent
-        imageData.data[idx + 3] = 0
-        continue
-      }
-      // Low value = nodal line = bright; high value = antinode = dark
-      const brightness = Math.max(0, 1 - v * 9)
-      imageData.data[idx]     = r
-      imageData.data[idx + 1] = g
-      imageData.data[idx + 2] = b
-      imageData.data[idx + 3] = Math.round(brightness * 200)
+    // Additive blending — overlapping dots brighten, just like the 3D canvas
+    ctx.globalCompositeOperation = "lighter"
+
+    for (let i = 0; i < N; i++) {
+      const px = pts[i * 3]
+      const py = pts[i * 3 + 1]
+
+      // Map from Chladni space [-R, R] to canvas pixels [0, res]
+      const sx = (px / R + 1) * 0.5 * res
+      const sy = (py / R + 1) * 0.5 * res
+
+      // Circular clip — skip points outside the circle
+      const dx = sx - cx; const dy = sy - cy
+      if (dx * dx + dy * dy > rad * rad) continue
+
+      // Soft falloff: large dots are rarer, small dots fill the field
+      const isBright = Math.random() < 0.06
+      const dr = isBright ? dotR * 2.2 : dotR
+
+      const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, dr)
+      grad.addColorStop(0, `rgba(${r},${g},${b},${isBright ? 0.55 : 0.28})`)
+      grad.addColorStop(1, `rgba(${r},${g},${b},0)`)
+      ctx.fillStyle = grad
+      ctx.beginPath()
+      ctx.arc(sx, sy, dr, 0, Math.PI * 2)
+      ctx.fill()
     }
 
-    ctx.putImageData(imageData, 0, 0)
+    // ── Circular mask (clean edges) ───────────────────────────────────────────
+    ctx.globalCompositeOperation = "destination-in"
+    ctx.globalAlpha = 1
+    ctx.beginPath()
+    ctx.arc(cx, cy, rad, 0, Math.PI * 2)
+    ctx.fillStyle = "#ffffff"
+    ctx.fill()
+
+    ctx.globalCompositeOperation = "source-over"
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signaturePoints, gridSize])
 
@@ -63,11 +103,11 @@ export function ChladniThumbnail({
     <canvas
       ref={canvasRef}
       style={{
-        width:           size,
-        height:          size,
-        display:         "block",
-        imageRendering:  "auto",
-        borderRadius:    "50%",  // circular crop — mirrors the Chladni circle boundary
+        width:          size,
+        height:         size,
+        display:        "block",
+        imageRendering: "auto",
+        borderRadius:   "50%",
       }}
     />
   )

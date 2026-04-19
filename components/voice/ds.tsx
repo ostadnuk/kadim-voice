@@ -281,15 +281,17 @@ export function DSShell({
   children,
   className = "",
   dir,
+  style,
 }: {
-  children: React.ReactNode
+  children:   React.ReactNode
   className?: string
-  dir?: "ltr" | "rtl"
+  dir?:       "ltr" | "rtl"
+  style?:     React.CSSProperties
 }) {
   return (
     <div
       className={`relative flex min-h-[100dvh] flex-col overflow-hidden ${className}`}
-      style={{ background: COLOR.bg, color: COLOR.text, fontFamily: FONT.base }}
+      style={{ background: COLOR.bg, color: COLOR.text, fontFamily: FONT.base, ...style }}
       dir={dir}
     >
       <style>{`@keyframes ds-cursor-blink { 50% { opacity: 0; } }`}</style>
@@ -300,13 +302,19 @@ export function DSShell({
 
 // ─── TOP BAR ─────────────────────────────────────────────────────────────────
 
-export function DSTopBar({ left, right, color }: { left?: React.ReactNode; right?: React.ReactNode; color?: string }) {
+export function DSTopBar({ left, center, right, color }: { left?: React.ReactNode; center?: React.ReactNode; right?: React.ReactNode; color?: string }) {
   return (
     <>
       {/* Step number — fixed top-left */}
       <div className="ds-safe-top" style={{ position: "fixed", top: 0, left: 0, zIndex: 100, paddingLeft: "1rem" }}>
         {left ?? <DSStepBar color={color} />}
       </div>
+      {/* Center content — fixed, centered */}
+      {center && (
+        <div className="ds-safe-top" style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          {center}
+        </div>
+      )}
       {/* Right content — fixed top-right */}
       {right && (
         <div className="ds-safe-top" style={{ position: "fixed", top: 0, right: 0, zIndex: 100, paddingRight: "1rem" }}>

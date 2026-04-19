@@ -29,19 +29,22 @@ const SETTLE   = 5.5   // seconds to expand into formation
 interface GyroState  { beta: number;  gamma: number;  active: boolean }
 interface DragState  { deltaX: number; deltaY: number; isDragging: boolean }
 
-// ── Inside camera — gyro + drag to look around ────────────────────────────────
+// ── Inside camera — gyro + drag to look around + pinch to zoom ───────────────
 
 function InsideCamera({
   gyroRef,
   dragRef,
+  zoomRef,
 }: {
   gyroRef: React.RefObject<GyroState>
   dragRef: React.RefObject<DragState>
+  zoomRef: React.RefObject<{ z: number }>
 }) {
   const { camera } = useThree()
-  const lookX = useRef(0.22)   // vertical look target (up = positive)
-  const lookY = useRef(0.0)    // horizontal look target
-  const yawRef = useRef(0.0)   // accumulated yaw from drag
+  const lookX  = useRef(0.22)   // vertical look target (up = positive)
+  const lookY  = useRef(0.0)    // horizontal look target
+  const yawRef = useRef(0.0)    // accumulated yaw from drag
+  const zCur   = useRef(1.0)    // smooth camera Z
 
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera
@@ -53,10 +56,13 @@ function InsideCamera({
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
 
+    // Smooth zoom: lerp current Z toward target
+    zCur.current = THREE.MathUtils.lerp(zCur.current, zoomRef.current.z, 0.08)
+
     // Base camera position — subtle float
     camera.position.x = Math.sin(t * 0.07) * 0.04
     camera.position.y = Math.cos(t * 0.05) * 0.03
-    camera.position.z = 1.0   // inside the vessel, further back so particles aren't huge
+    camera.position.z = zCur.current
 
     // Gyro: shifts where we're looking
     const gyro = gyroRef.current
@@ -329,12 +335,12 @@ export function ArchiveCanvas({
   signaturePoints: number[]
   mySignatureId?:  string | null
 }) {
-  const key      = signaturePoints.slice(0, 4).map(v => v.toFixed(3)).join(",")
-  const gyroRef  = useRef<GyroState>({ beta: 0, gamma: 0, active: false })
-  const dragRef  = useRef<DragState>({ deltaX: 0, deltaY: 0, isDragging: false })
+  const key         = signaturePoints.slice(0, 4).map(v => v.toFixed(3)).join(",")
+  const gyroRef     = useRef<GyroState>({ beta: 0, gamma: 0, active: false })
+  const dragRef     = useRef<DragState>({ deltaX: 0, deltaY: 0, isDragging: false })
+  const zoomRef     = useRef({ z: 1.0 })   // camera Z: 0.3 (close) → 2.5 (far)
   const gyroPermRef = useRef(false)
 
-  // Gyroscope — tilt to look around inside
   useEffect(() => {
     function onOrientation(e: DeviceOrientationEvent) {
       gyroRef.current.beta   = e.beta  ?? 0
@@ -356,31 +362,92 @@ export function ArchiveCanvas({
       }
     }
 
-    // Touch / pointer for drag-to-look
+    // Touch / pointer — single finger: drag-to-look, two fingers: pinch-to-zoom
     let lastX = 0
+    let lastPinchDist = 0
+
+    function getPinchDist(e: TouchEvent) {
+      if (e.touches.length < 2) return 0
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      return Math.sqrt(dx * dx + dy * dy)
+    }
+
+    function onTouchStart(e: TouchEvent) {
+      requestGyro()
+      if (e.touches.length === 1) {
+        lastX = e.touches[0].clientX
+        dragRef.current.isDragging = true
+      } else if (e.touches.length === 2) {
+        dragRef.current.isDragging = false
+        lastPinchDist = getPinchDist(e)
+      }
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      if (e.touches.length === 2) {
+        const dist = getPinchDist(e)
+        if (lastPinchDist > 0) {
+          const scale = dist / lastPinchDist
+          // Pinch in (scale < 1) = zoom out (increase Z = move back)
+          // Pinch out (scale > 1) = zoom in (decrease Z = move forward)
+          zoomRef.current.z = Math.max(0.25, Math.min(2.5, zoomRef.current.z / scale))
+        }
+        lastPinchDist = dist
+        dragRef.current.isDragging = false
+      } else if (e.touches.length === 1 && dragRef.current.isDragging) {
+        dragRef.current.deltaX += e.touches[0].clientX - lastX
+        lastX = e.touches[0].clientX
+      }
+    }
+
+    function onTouchEnd(e: TouchEvent) {
+      if (e.touches.length < 2) lastPinchDist = 0
+      if (e.touches.length === 0) dragRef.current.isDragging = false
+    }
+
+    // Mouse wheel for desktop zoom
+    function onWheel(e: WheelEvent) {
+      e.preventDefault()
+      zoomRef.current.z = Math.max(0.25, Math.min(2.5, zoomRef.current.z + e.deltaY * 0.002))
+    }
+
     function onPointerDown(e: PointerEvent) {
+      if (e.pointerType === "touch") return  // handled by touch events
       requestGyro()
       lastX = e.clientX
       dragRef.current.isDragging = true
     }
     function onPointerMove(e: PointerEvent) {
+      if (e.pointerType === "touch") return
       if (!dragRef.current.isDragging) return
       dragRef.current.deltaX += e.clientX - lastX
       lastX = e.clientX
     }
-    function onPointerUp() { dragRef.current.isDragging = false }
+    function onPointerUp(e: PointerEvent) {
+      if (e.pointerType !== "touch") dragRef.current.isDragging = false
+    }
 
+    window.addEventListener("touchstart",   onTouchStart,  { passive: true })
+    window.addEventListener("touchmove",    onTouchMove,   { passive: true })
+    window.addEventListener("touchend",     onTouchEnd,    { passive: true })
+    window.addEventListener("wheel",        onWheel,       { passive: false })
     window.addEventListener("pointerdown",  onPointerDown)
     window.addEventListener("pointermove",  onPointerMove)
     window.addEventListener("pointerup",    onPointerUp)
-    window.addEventListener("pointercancel",onPointerUp)
+    window.addEventListener("pointercancel", onPointerUp)
+    window.addEventListener("deviceorientation", onOrientation)
 
     return () => {
+      window.removeEventListener("touchstart",   onTouchStart)
+      window.removeEventListener("touchmove",    onTouchMove)
+      window.removeEventListener("touchend",     onTouchEnd)
+      window.removeEventListener("wheel",        onWheel)
       window.removeEventListener("deviceorientation", onOrientation)
       window.removeEventListener("pointerdown",  onPointerDown)
       window.removeEventListener("pointermove",  onPointerMove)
       window.removeEventListener("pointerup",    onPointerUp)
-      window.removeEventListener("pointercancel",onPointerUp)
+      window.removeEventListener("pointercancel", onPointerUp)
     }
   }, [])
 
@@ -393,7 +460,7 @@ export function ArchiveCanvas({
       dpr={[1, 1.5]}
       onCreated={({ gl }) => gl.setClearColor(BG, 1)}
     >
-      <InsideCamera gyroRef={gyroRef} dragRef={dragRef} />
+      <InsideCamera gyroRef={gyroRef} dragRef={dragRef} zoomRef={zoomRef} />
       <Suspense fallback={null}>
         <VesselShell />
       </Suspense>
