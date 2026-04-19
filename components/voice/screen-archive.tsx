@@ -372,6 +372,9 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
         right={<WorldClock />}
       />
 
+      {/* Spacer — clears the fixed DSTopBar (safe-area + bar height) */}
+      <div style={{ height: "max(4.5rem, calc(env(safe-area-inset-top) + 3.5rem))", flexShrink: 0 }} />
+
       {/* Fixed bottom bar — toggle stays in same position as vessel view */}
       <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20,
@@ -391,7 +394,7 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
 
       {/* Section label */}
       <div style={{
-        padding: "clamp(1rem, 4vw, 1.5rem) clamp(1.25rem, 6vw, 2.5rem) 0.5rem",
+        padding: "0.25rem clamp(1.25rem, 6vw, 2.5rem) 0.5rem",
         fontFamily: FONT.base, fontWeight: 300,
         fontSize: TYPE.hud, letterSpacing: TRACK.caps,
         color: COLOR.secondary, opacity: 0.35,
