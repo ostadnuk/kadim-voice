@@ -138,11 +138,12 @@ interface UnifiedSceneProps {
   waveformPeaks:   number[]
   signaturePoints: number[] | null
   phase:           CanvasPhase
+  exiting:         boolean
   gyroRef:         React.RefObject<GyroState>
   touchRef:        React.RefObject<TouchState>
 }
 
-function UnifiedScene({ waveformPeaks, signaturePoints, phase, gyroRef, touchRef }: UnifiedSceneProps) {
+function UnifiedScene({ waveformPeaks, signaturePoints, phase, exiting, gyroRef, touchRef }: UnifiedSceneProps) {
   const pointsRef       = useRef<THREE.Points>(null!)
   const startRef        = useRef<number | null>(null)
   const phaseRef        = useRef(phase)
@@ -151,6 +152,9 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase, gyroRef, touchRef
   const morphBRef       = useRef(0)
   const morphBStartRef  = useRef<number | null>(null)
   const imprintReadyRef = useRef(false)
+  const exitStartRef    = useRef<number | null>(null)
+  const exitingRef      = useRef(exiting)
+  exitingRef.current    = exiting
 
   // Smoothed interaction state
   const tiltXRef        = useRef(0)
@@ -194,6 +198,8 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase, gyroRef, touchRef
         uRepulseRadius:  { value: 1.8 },
         uRepulseStrength:{ value: 0.7 },
         uRepulseActive:  { value: 0.0 },
+        // Exit convergence
+        uExit:           { value: 0.0 },
       },
       vertexShader: `
         attribute float size;
@@ -209,6 +215,7 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase, gyroRef, touchRef
         uniform float   uRepulseRadius;
         uniform float   uRepulseStrength;
         uniform float   uRepulseActive;
+        uniform float   uExit;
         varying float   vAlpha;
         varying float   vBreath;
 
@@ -238,6 +245,16 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase, gyroRef, touchRef
             float t      = 1.0 - repDist / uRepulseRadius;
             float force  = t * t * uRepulseStrength * uRepulseActive;
             pos += normalize(toParticle + vec3(0.0001)) * force;
+          }
+
+          // ── Exit convergence — particles spiral to center ─────────────────
+          if (uExit > 0.001) {
+            float exitEase = uExit * uExit * (3.0 - 2.0 * uExit); // smoothstep
+            // Spiral inward
+            float angle = uExit * 4.0;
+            float cs = cos(angle); float sn = sin(angle);
+            pos.xy = mix(pos.xy, vec2(cs * pos.x - sn * pos.y, sn * pos.x + cs * pos.y) * (1.0 - exitEase), exitEase);
+            pos = mix(pos, vec3(0.0), exitEase);
           }
 
           // ── Breathing size ─────────────────────────────────────────────────
@@ -323,6 +340,13 @@ function UnifiedScene({ waveformPeaks, signaturePoints, phase, gyroRef, touchRef
       material.uniforms.uMorphB.value = morphBRef.current
     }
 
+    // ── Exit convergence uniform ─────────────────────────────────────────────
+    if (exitingRef.current) {
+      if (exitStartRef.current === null) exitStartRef.current = clock.getElapsedTime()
+      const exitT = Math.min((clock.getElapsedTime() - exitStartRef.current) / 1.0, 1.0)
+      material.uniforms.uExit.value = exitT
+    }
+
     // ── Base rotation ─────────────────────────────────────────────────────────
     const inImprint = morphBRef.current > 0.85
     let baseRX: number, baseRY: number, baseRZ: number
@@ -373,10 +397,12 @@ export function VoiceCanvasUnified({
   waveformPeaks,
   signaturePoints,
   phase,
+  exiting = false,
 }: {
   waveformPeaks:   number[]
   signaturePoints: number[] | null
   phase:           CanvasPhase
+  exiting?:        boolean
 }) {
   const gyroRef  = useRef<GyroState>({ beta: 0, gamma: 0, active: false })
   const touchRef = useRef<TouchState>({ ndcX: 0, ndcY: 0, active: false })
@@ -472,6 +498,7 @@ export function VoiceCanvasUnified({
         waveformPeaks={waveformPeaks}
         signaturePoints={signaturePoints}
         phase={phase}
+        exiting={exiting}
         gyroRef={gyroRef}
         touchRef={touchRef}
       />

@@ -311,6 +311,7 @@ export function ScreenWonderFlow({
         waveformPeaks={waveformPeaks}
         signaturePoints={signaturePoints}
         phase={canvasPhase}
+        exiting={enteringVessel}
       />
 
       {/* ── TOP RAIL — unified HUD for all phases, same grid as landing ── */}
