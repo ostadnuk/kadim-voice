@@ -179,8 +179,25 @@ export function ScreenWonderFlow({
     return () => ts.forEach(clearTimeout)
   }, [])
 
-  // ── Upload — starts automatically on mount ───────────────────────────────────
-  const hasStartedUpload = useRef(false)
+  // ── Upload — two phases: fast analysis → immediate Chladni, then network upload ─
+  const hasStartedUpload  = useRef(false)
+  const analysisRunRef    = useRef(false)       // analysis runs once; upload may retry
+  const cachedSigPtsRef   = useRef<number[]>([])
+  const cachedPeaksRef    = useRef<number[]>(waveformPeaks)
+  const imprintTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const scheduleImprint = useCallback(() => {
+    if (imprintTimerRef.current) return   // already scheduled
+    const elapsed = (Date.now() - mountTimeRef.current) / 1000
+    const waitMs  = Math.max((MORPH_A_DONE_AT + 0.5 - elapsed) * 1000, 0)
+    imprintTimerRef.current = setTimeout(() => {
+      setCanvasPhase("imprint")
+      setTimeout(() => {
+        const el = archiveCtaRef.current
+        if (el) { el.style.opacity = "1"; el.style.pointerEvents = "auto" }
+      }, 5500)
+    }, waitMs)
+  }, [])
 
   const runUpload = useCallback(async () => {
     if (hasStartedUpload.current) return
@@ -188,16 +205,32 @@ export function ScreenWonderFlow({
     setUploadError(false)
     setCanvasPhase("transmitting")
 
-    try {
-      const { waveformPeaks: realPeaks, signaturePoints: sigPts } = await analyzeAudioBlob(audioBlob)
-      const peaks = realPeaks.length > 0 ? realPeaks : waveformPeaks
+    // ── Step 1: analysis — runs once, triggers Chladni immediately ────────────
+    if (!analysisRunRef.current) {
+      analysisRunRef.current = true
+      try {
+        const { waveformPeaks: realPeaks, signaturePoints: sigPts } = await analyzeAudioBlob(audioBlob)
+        cachedSigPtsRef.current   = sigPts
+        cachedPeaksRef.current    = realPeaks.length > 0 ? realPeaks : waveformPeaks
+      } catch {
+        // analysis failed — sigPts stays empty, canvas will use voice shape
+        cachedPeaksRef.current = waveformPeaks
+      }
+      // Set signaturePoints NOW — canvas starts building Chladni in the background.
+      // MorphB only fires when phase = "imprint", which is gated on MORPH_A_DONE_AT.
+      // That gives the geometry ~7s to compute before the morph starts.
+      setSignaturePoints(cachedSigPtsRef.current)
+      scheduleImprint()
+    }
 
+    // ── Step 2: network upload — may fail and retry without re-running analysis ─
+    try {
       const formData = new FormData()
       formData.append("audio", audioBlob, "recording.webm")
       formData.append("meta", JSON.stringify({
         durationSec:     duration,
-        signaturePoints: sigPts,
-        waveformPeaks:   peaks,
+        signaturePoints: cachedSigPtsRef.current,
+        waveformPeaks:   cachedPeaksRef.current,
         sourceType:      location.sourceType,
         venueId:         location.venueId,
         venueName:       location.venueName,
@@ -218,29 +251,13 @@ export function ScreenWonderFlow({
         setSignatureNumber(uploadResult.signatureNumber)
       }
 
-      // Delay imprint until morph A has completed (canvas needs ~9s from mount)
-      const elapsed = (Date.now() - mountTimeRef.current) / 1000
-      const waitMs  = Math.max((MORPH_A_DONE_AT + 0.5 - elapsed) * 1000, 0)
-
-      setTimeout(() => {
-        setSignaturePoints(sigPts)
-        setCanvasPhase("imprint")
-        // Archive CTA appears after imprint pattern has settled (~5.5s)
-        setTimeout(() => {
-          const el = archiveCtaRef.current
-          if (el) { el.style.opacity = "1"; el.style.pointerEvents = "auto" }
-        }, 5500)
-      }, waitMs)
-
     } catch (err) {
       console.error("Upload failed:", err)
       setUploadError(true)
-      setCanvasPhase("wonder")
-      hasStartedUpload.current = false
+      hasStartedUpload.current = false   // allow retry of upload only
       setUploadAttempts(prev => {
         const next = prev + 1
         if (next >= 3) {
-          // Give up auto-retry after 3 attempts — show manual retry button
           setUploadGaveUp(true)
         } else {
           // Exponential backoff: 3s, 6s, 12s
@@ -252,7 +269,7 @@ export function ScreenWonderFlow({
       })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBlob, waveformPeaks, duration, location, mixOptIn])
+  }, [audioBlob, waveformPeaks, duration, location, mixOptIn, scheduleImprint])
 
   useEffect(() => {
     const timer = setTimeout(runUpload, 800)
