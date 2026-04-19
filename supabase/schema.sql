@@ -1,5 +1,5 @@
--- Kadim Voice — Supabase schema
--- Run this in the Supabase SQL Editor to create the required table and storage bucket.
+-- Kadim Voice — Supabase schema (idempotent — safe to re-run)
+-- Run this in the Supabase SQL Editor.
 
 -- ── Recordings table ─────────────────────────────────────────────────────────
 
@@ -33,11 +33,14 @@ create table if not exists recordings (
 create index if not exists recordings_created_at_idx on recordings (created_at desc);
 
 -- ── Row-level security ────────────────────────────────────────────────────────
--- Enable RLS but allow anonymous inserts (public art installation)
 
 alter table recordings enable row level security;
 
--- Anyone can insert (public art project — no auth required)
+-- Drop existing policies before recreating (safe to re-run)
+drop policy if exists "Public insert" on recordings;
+drop policy if exists "Public read"   on recordings;
+
+-- Anyone can insert (public art installation — no auth required)
 create policy "Public insert" on recordings
   for insert to anon with check (true);
 
@@ -45,13 +48,9 @@ create policy "Public insert" on recordings
 create policy "Public read" on recordings
   for select to anon using (true);
 
--- ── Storage bucket ────────────────────────────────────────────────────────────
--- Create via Supabase Dashboard: Storage → New bucket → "audio" → Public
-
--- Or via SQL (requires admin):
--- insert into storage.buckets (id, name, public) values ('audio', 'audio', true)
--- on conflict do nothing;
-
--- Allow anonymous uploads to the audio bucket
--- create policy "Public audio upload" on storage.objects
---   for insert to anon with check (bucket_id = 'audio');
+-- ── Storage ───────────────────────────────────────────────────────────────────
+-- Create the "audio" bucket via Dashboard: Storage → New bucket → "audio" → Public
+-- Then add these storage policies via Dashboard → Storage → Policies:
+--
+--   INSERT policy for anon: (bucket_id = 'audio')
+--   SELECT policy for anon: (bucket_id = 'audio')
