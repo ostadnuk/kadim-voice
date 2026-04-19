@@ -413,7 +413,7 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
         gap: 6,
       }}>
         <a
-          href="https://reactiontime.co"
+          href="https://www.reactiontime.org"
           target="_blank" rel="noopener noreferrer"
           style={{
             fontFamily: FONT.base, fontWeight: 300,
