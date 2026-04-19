@@ -15,7 +15,7 @@ import type { Language } from "@/lib/i18n"
 
 const ArchiveCanvasDynamic = dynamic(
   () => import("./archive-canvas").then(m => m.ArchiveCanvas),
-  { ssr: false }
+  { ssr: false, loading: () => null }
 )
 
 // ── i18n ──────────────────────────────────────────────────────────────────────
@@ -203,17 +203,17 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
         right={<WorldClock />}
       />
 
-      {/* ── Collective pattern hero — tall, full-bleed, breathing 3D ──────── */}
+      {/* ── Collective vessel — tall, full-bleed, inside perspective ──────── */}
       <div style={{
         position:   "relative",
         width:      "100%",
-        height:     "60svh",
-        minHeight:  320,
+        height:     "75svh",
+        minHeight:  380,
         background: COLOR.bg,
         flexShrink: 0,
       }}>
         {collectiveSig ? (
-          <ArchiveCanvasDynamic signaturePoints={collectiveSig} />
+          <ArchiveCanvasDynamic signaturePoints={collectiveSig} mySignatureId={mySignatureId} />
         ) : (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color: COLOR.secondary, opacity: 0.3 }}>

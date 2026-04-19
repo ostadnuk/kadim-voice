@@ -151,6 +151,7 @@ export function ScreenWonderFlow({
   const [uploadError,      setUploadError]      = useState(false)
   const [uploadAttempts,   setUploadAttempts]   = useState(0)
   const [uploadGaveUp,     setUploadGaveUp]     = useState(false)
+  const [enteringVessel,   setEnteringVessel]   = useState(false)
   const [visibleLines,    setVisibleLines]    = useState(0)
   const [formattedTime] = useState(() => new Date().toLocaleString(
     language === "en" ? "en-GB" : language === "he" ? "he-IL" : "ar-SA",
@@ -512,8 +513,25 @@ export function ScreenWonderFlow({
       {/* Archive CTA — fixed at bottom, appears only when pattern has settled */}
       <div ref={archiveCtaRef} className="ds-safe-bottom px-4"
         style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20, paddingTop: 8, transition: "opacity 1.2s ease" }}>
-        <DSButton onClick={() => onArchive(uploadedId ?? "")} color={COLOR.text}>{lbl.saveToArchive}</DSButton>
+        <DSButton
+          onClick={() => {
+            setEnteringVessel(true)
+            setTimeout(() => onArchive(uploadedId ?? ""), 1000)
+          }}
+          color={COLOR.text}
+        >
+          {lbl.saveToArchive}
+        </DSButton>
       </div>
+
+      {/* Vessel entry fade — black-out before transitioning into the archive */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 40,
+        background: "#070c17",
+        opacity: enteringVessel ? 1 : 0,
+        transition: "opacity 0.9s ease",
+        pointerEvents: "none",
+      }} />
 
     </DSShell>
   )
