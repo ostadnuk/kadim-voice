@@ -283,13 +283,73 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
           )}
         </div>
 
-        {/* Top bar — floats over canvas */}
+        {/* Top bar: back (left) + clock (right) only — no toggle clutter */}
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "max(1.2rem, env(safe-area-inset-top)) clamp(1rem, 5vw, 2rem) 0.75rem",
+          padding: "max(1.2rem, env(safe-area-inset-top)) clamp(1rem, 5vw, 1.5rem) 0.75rem",
         }}>
           <DSBack onClick={onBack} />
+          <div style={{ fontFamily: FONT.base, fontSize: TYPE.hud, letterSpacing: TRACK.caps, color: COLOR.secondary, opacity: 0.6 }}>
+            <WorldClock />
+          </div>
+        </div>
+
+        {/* Arrival phrase */}
+        {mySignatureId && (
+          <div style={{
+            position: "absolute",
+            top: "40%", left: 0, right: 0,
+            display: "flex", justifyContent: "center", alignItems: "center",
+            pointerEvents: "none", zIndex: 4,
+            animation: "arrival-pulse 5s ease forwards",
+            transition: arrivalPhase === "out" ? "opacity 1.5s ease" : undefined,
+            opacity: arrivalPhase === "out" ? 0 : undefined,
+          }}>
+            <span style={{
+              fontFamily: FONT.base, fontWeight: 300,
+              fontSize: "clamp(0.95rem, 3.5vw, 1.2rem)",
+              letterSpacing: TRACK.sm, color: "#7dd4a0",
+              textShadow: "0 0 20px rgba(125,212,160,0.5), 0 0 40px rgba(125,212,160,0.2)",
+              opacity: 0.9, textAlign: "center", direction: dir,
+            }}>
+              {t.arrival}
+            </span>
+          </div>
+        )}
+
+        {/* Bottom overlay: count (left) + toggle (right) */}
+        <div style={{
+          position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 10,
+          display: "flex", alignItems: "flex-end", justifyContent: "space-between",
+          padding: "1.5rem clamp(1rem, 5vw, 1.5rem) max(1.5rem, env(safe-area-inset-bottom))",
+          background: "linear-gradient(to top, rgba(7,12,23,0.75) 0%, transparent 100%)",
+        }}>
+          {/* Count */}
+          <div style={{
+            display: "flex", flexDirection: "column", gap: 2,
+            alignItems: dir === "rtl" ? "flex-end" : "flex-start",
+            pointerEvents: "none",
+            opacity: collectiveSig ? 1 : 0,
+            transition: "opacity 1.2s ease",
+          }}>
+            <div style={{
+              fontFamily: FONT.base, fontWeight: 700,
+              fontSize: "clamp(2.2rem, 9vw, 3.5rem)",
+              letterSpacing: "-0.03em", color: COLOR.text, lineHeight: 1,
+            }}>
+              {collectiveTotal.toLocaleString()}
+            </div>
+            <div style={{
+              fontFamily: FONT.base, fontWeight: 300,
+              fontSize: TYPE.sm, letterSpacing: TRACK.caps,
+              color: "#c8d4f8", opacity: 0.7, textTransform: "uppercase",
+            }}>
+              {t.voices(collectiveTotal)}
+            </div>
+          </div>
+
+          {/* Toggle — bottom right */}
           <ViewToggle
             view={view}
             onVessel={() => setView("vessel")}
@@ -297,73 +357,6 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
             labelA={t.viewVessel}
             labelB={t.viewList}
           />
-          <WorldClock />
-        </div>
-
-        {/* Arrival phrase */}
-        {mySignatureId && (
-          <div style={{
-            position: "absolute",
-            top: "50%", left: 0, right: 0,
-            transform: "translateY(-50%)",
-            display: "flex", justifyContent: "center", alignItems: "center",
-            pointerEvents: "none", zIndex: 4,
-            opacity: arrivalPhase === "out" ? 0 : undefined,
-            animation: "arrival-pulse 5s ease forwards",
-            transition: arrivalPhase === "out" ? "opacity 1.5s ease" : undefined,
-          }}>
-            <span style={{
-              fontFamily: FONT.base, fontWeight: 300,
-              fontSize: "clamp(0.95rem, 3.5vw, 1.2rem)",
-              letterSpacing: TRACK.sm,
-              color: "#7dd4a0",
-              textShadow: "0 0 20px rgba(125,212,160,0.5), 0 0 40px rgba(125,212,160,0.2)",
-              opacity: 0.85,
-              textAlign: "center",
-              direction: dir,
-            }}>
-              {t.arrival}
-            </span>
-          </div>
-        )}
-
-        {/* Bottom overlay: count */}
-        <div style={{
-          position: "absolute",
-          bottom: "clamp(1.5rem, 5vw, 2.5rem)",
-          left: "clamp(1.25rem, 6vw, 2.5rem)",
-          right: "clamp(1.25rem, 6vw, 2.5rem)",
-          pointerEvents: "none", zIndex: 5,
-          display: "flex", flexDirection: "column",
-          alignItems: dir === "rtl" ? "flex-end" : "flex-start",
-          gap: 3,
-        }}>
-          <div style={{
-            fontFamily: FONT.base, fontWeight: 700,
-            fontSize: "clamp(2.8rem, 11vw, 4.5rem)",
-            letterSpacing: "-0.03em",
-            color: COLOR.text, lineHeight: 1,
-            opacity: collectiveSig ? 0.9 : 0,
-            transition: "opacity 1.2s ease",
-          }}>
-            {collectiveTotal.toLocaleString()}
-          </div>
-          <div style={{
-            fontFamily: FONT.base, fontWeight: 300,
-            fontSize: TYPE.xs, letterSpacing: TRACK.caps,
-            color: "#c8d4f8", opacity: 0.45,
-            textTransform: "uppercase",
-          }}>
-            {t.voices(collectiveTotal)}
-          </div>
-          <div style={{
-            fontFamily: FONT.base, fontWeight: 300,
-            fontSize: TYPE.hud, letterSpacing: TRACK.sm,
-            color: COLOR.text, opacity: OPACITY.tertiary * 0.55,
-            marginTop: 2,
-          }}>
-            {t.collectiveSub}
-          </div>
         </div>
       </DSShell>
     )
@@ -376,16 +369,18 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
 
       <DSTopBar
         left={<DSBack onClick={onBack} />}
-        center={
-          <ViewToggle
-            view={view}
-            onVessel={() => setView("vessel")}
-            onList={() => setView("list")}
-            labelA={t.viewVessel}
-            labelB={t.viewList}
-          />
+        right={
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <ViewToggle
+              view={view}
+              onVessel={() => setView("vessel")}
+              onList={() => setView("list")}
+              labelA={t.viewVessel}
+              labelB={t.viewList}
+            />
+            <WorldClock />
+          </div>
         }
-        right={<WorldClock />}
       />
 
       {/* Section label */}

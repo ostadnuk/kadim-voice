@@ -316,9 +316,10 @@ function CollectiveScene({
     cloudMat.uniforms.uTime.value    = clock.getElapsedTime()
 
     if (cloudRef.current) {
-      const s = Math.min(elapsed / SETTLE, 1.0)
-      cloudRef.current.rotation.y = elapsed * 0.004 * (1.0 + (1.0 - s) * 0.6)
-      cloudRef.current.rotation.x = Math.sin(elapsed * 0.007) * 0.03
+      // Visible rotation so the 3D vessel shape reads clearly — ~1 full turn per 3 min
+      // Slightly tilted X-axis wobble helps reveal the depth/volume of the cloud
+      cloudRef.current.rotation.y = elapsed * 0.035
+      cloudRef.current.rotation.x = Math.sin(elapsed * 0.018) * 0.18
     }
 
     if (mySignatureId) {
