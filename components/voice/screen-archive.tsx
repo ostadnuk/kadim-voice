@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import dynamic from "next/dynamic"
 import { ChladniThumbnail } from "./chladni-thumbnail"
 import {
@@ -23,6 +23,7 @@ const ArchiveCanvasDynamic = dynamic(
 const T: Record<Language, {
   voices: (n: number) => string
   collectiveSub: string
+  arrival: string
   individuals: string
   loading: string
   noEntries: string
@@ -40,6 +41,7 @@ const T: Record<Language, {
   en: {
     voices:        (n) => `${n.toLocaleString()} ${n === 1 ? "voice" : "voices"}`,
     collectiveSub: "The sum of every voice recorded into Kadim",
+    arrival:       "Your signature joins the vessel",
     individuals:   "INDIVIDUAL SIGNATURES",
     loading:       "LOADING...",
     noEntries:     "NO ENTRIES YET",
@@ -57,6 +59,7 @@ const T: Record<Language, {
   he: {
     voices:        (n) => `${n.toLocaleString()} ${n === 1 ? "קול" : "קולות"}`,
     collectiveSub: "סכום כל הקולות שנקלטו בקדים",
+    arrival:       "חתימתך מצטרפת לכלי",
     individuals:   "חתימות אישיות",
     loading:       "טוען...",
     noEntries:     "אין רשומות עדיין",
@@ -74,6 +77,7 @@ const T: Record<Language, {
   ar: {
     voices:        (n) => `${n.toLocaleString()} أصوات`,
     collectiveSub: "مجموع كل الأصوات المسجَّلة في قديم",
+    arrival:       "توقيعك ينضمّ إلى الإناء",
     individuals:   "التوقيعات الفردية",
     loading:       "جارٍ التحميل...",
     noEntries:     "لا توجد تسجيلات بعد",
@@ -119,6 +123,15 @@ const PAGE_SIZE = 12
 export function ScreenArchive({ language = "en", mySignatureId, onBack }: ScreenArchiveProps) {
   const t   = T[language]
   const dir = (language === "en" ? "ltr" : "rtl") as "ltr" | "rtl"
+
+  // Arrival text — fades in immediately, fades out after 5s
+  const [arrivalPhase, setArrivalPhase] = useState<"in" | "out">("in")
+  const arrivalRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    // Show for 4.5s then fade out — timed to roughly match particle settling
+    arrivalRef.current = setTimeout(() => setArrivalPhase("out"), 4500)
+    return () => { if (arrivalRef.current) clearTimeout(arrivalRef.current) }
+  }, [])
 
   // Collective pattern
   const [collectiveSig,   setCollectiveSig]   = useState<number[] | null>(null)
@@ -177,6 +190,12 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
           60%  { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.4), 0 0 16px rgba(125,212,160,0.12); }
           100% { box-shadow: inset 0 0 0 1px rgba(125,212,160,0.0), 0 0 0px rgba(125,212,160,0.0); }
         }
+        @keyframes arrival-pulse {
+          0%   { opacity: 0; transform: translateY(6px); }
+          20%  { opacity: 1; transform: translateY(0); }
+          75%  { opacity: 1; }
+          100% { opacity: 0; }
+        }
       `}</style>
 
       <DSTopBar
@@ -199,6 +218,33 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontFamily: FONT.base, fontSize: TYPE.xs, letterSpacing: TRACK.caps, color: COLOR.secondary, opacity: 0.3 }}>
               …
+            </span>
+          </div>
+        )}
+
+        {/* Arrival phrase — only shown when mySignatureId exists (user just recorded) */}
+        {mySignatureId && (
+          <div style={{
+            position: "absolute",
+            top: "50%", left: 0, right: 0,
+            transform: "translateY(-50%)",
+            display: "flex", justifyContent: "center", alignItems: "center",
+            pointerEvents: "none", zIndex: 4,
+            opacity: arrivalPhase === "out" ? 0 : undefined,
+            animation: "arrival-pulse 5s ease forwards",
+            transition: arrivalPhase === "out" ? "opacity 1.5s ease" : undefined,
+          }}>
+            <span style={{
+              fontFamily: FONT.base, fontWeight: 300,
+              fontSize: "clamp(0.95rem, 3.5vw, 1.2rem)",
+              letterSpacing: TRACK.sm,
+              color: "#7dd4a0",
+              textShadow: "0 0 20px rgba(125,212,160,0.5), 0 0 40px rgba(125,212,160,0.2)",
+              opacity: 0.85,
+              textAlign: "center",
+              direction: dir,
+            }}>
+              {t.arrival}
             </span>
           </div>
         )}
