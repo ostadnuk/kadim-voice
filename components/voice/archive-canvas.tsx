@@ -27,9 +27,17 @@ const SETTLE   = 5.5   // seconds to expand into formation
 // ── Interaction state ─────────────────────────────────────────────────────────
 
 interface GyroState  { beta: number;  gamma: number;  active: boolean }
-interface DragState  { deltaX: number; deltaY: number; isDragging: boolean }
+interface DragState  {
+  deltaX: number; deltaY: number
+  velX:   number; velY:   number    // last-frame velocity for momentum
+  isDragging: boolean
+}
 
-// ── Inside camera — gyro + drag to look around + pinch to zoom ───────────────
+// ── Inside camera — gyro + full free-look drag + pinch to zoom ────────────────
+//
+// orbitY = accumulated yaw  (horizontal)
+// orbitX = accumulated pitch (vertical, clamped ±70°)
+// On drag release: momentum carries the look direction forward, decays smoothly.
 
 function InsideCamera({
   gyroRef,
@@ -41,10 +49,9 @@ function InsideCamera({
   zoomRef: React.RefObject<{ z: number }>
 }) {
   const { camera } = useThree()
-  const lookX  = useRef(0.22)   // vertical look target (up = positive)
-  const lookY  = useRef(0.0)    // horizontal look target
-  const yawRef = useRef(0.0)    // accumulated yaw from drag
-  const zCur   = useRef(1.0)    // smooth camera Z
+  const orbitX  = useRef(0.15)    // pitch (radians) — slightly upward default
+  const orbitY  = useRef(0.0)     // yaw   (radians)
+  const zCur    = useRef(1.0)     // smooth camera Z
 
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera
@@ -56,33 +63,52 @@ function InsideCamera({
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
 
-    // Smooth zoom: lerp current Z toward target
+    // Smooth zoom
     zCur.current = THREE.MathUtils.lerp(zCur.current, zoomRef.current.z, 0.08)
 
-    // Base camera position — subtle float
+    // Subtle float
     camera.position.x = Math.sin(t * 0.07) * 0.04
     camera.position.y = Math.cos(t * 0.05) * 0.03
     camera.position.z = zCur.current
 
-    // Gyro: shifts where we're looking
-    const gyro = gyroRef.current
-    const targetLookX = gyro.active ? 0.22 + gyro.beta  * 0.005 : 0.22
-    const targetLookY = gyro.active ?         gyro.gamma * 0.006 : 0.0
-    lookX.current = THREE.MathUtils.lerp(lookX.current, targetLookX, 0.04)
-    lookY.current = THREE.MathUtils.lerp(lookY.current, targetLookY, 0.04)
-
-    // Drag: accumulate yaw
     if (dragRef.current.isDragging) {
-      yawRef.current += dragRef.current.deltaX * 0.003
+      // Direct drag → accumulate into orbit angles
+      orbitY.current += dragRef.current.deltaX * 0.0045
+      orbitX.current -= dragRef.current.deltaY * 0.0045   // screen-Y inverted
+      // Capture velocity for momentum on release
+      dragRef.current.velX = dragRef.current.deltaX
+      dragRef.current.velY = dragRef.current.deltaY
       dragRef.current.deltaX = 0
+      dragRef.current.deltaY = 0
     } else {
-      yawRef.current *= 0.97   // slowly return to center
+      // Momentum: carry last velocity, decay with friction
+      orbitY.current += dragRef.current.velX * 0.0045
+      orbitX.current -= dragRef.current.velY * 0.0045
+      dragRef.current.velX *= 0.88
+      dragRef.current.velY *= 0.88
     }
 
+    // Clamp pitch so you can't flip upside down
+    orbitX.current = Math.max(-1.2, Math.min(1.2, orbitX.current))
+
+    // Gyro: additive offset on top of accumulated orbit
+    const gyro    = gyroRef.current
+    const gyroDX  = gyro.active ? gyro.gamma * 0.006 : 0
+    const gyroDY  = gyro.active ? gyro.beta  * 0.005 : 0
+
+    // Gentle idle drift when nobody is touching
+    const idleDrift = (Math.abs(dragRef.current.velX) < 0.3 && !dragRef.current.isDragging)
+      ? Math.sin(t * 0.04) * 0.025
+      : 0
+
+    // Convert spherical (pitch/yaw) to lookAt target
+    const LOOK_DIST = 1.8
+    const pitch = orbitX.current + gyroDY
+    const yaw   = orbitY.current + gyroDX + idleDrift
     camera.lookAt(
-      lookY.current + yawRef.current + Math.sin(t * 0.04) * 0.04,
-      lookX.current  + Math.cos(t * 0.06) * 0.03,
-      -0.8
+      Math.sin(yaw)   * LOOK_DIST,
+      Math.sin(pitch) * LOOK_DIST,
+      -Math.cos(yaw)  * LOOK_DIST,
     )
   })
   return null
@@ -130,9 +156,11 @@ function VesselShell() {
 function CollectiveScene({
   signaturePoints,
   mySignatureId,
+  dragRef,
 }: {
   signaturePoints: number[]
   mySignatureId?:  string | null
+  dragRef: React.RefObject<DragState>
 }) {
   const cloudRef  = useRef<THREE.Points>(null!)
   const startRef  = useRef<number | null>(null)
@@ -316,9 +344,9 @@ function CollectiveScene({
     cloudMat.uniforms.uTime.value    = clock.getElapsedTime()
 
     if (cloudRef.current) {
-      // Visible rotation so the 3D vessel shape reads clearly — ~1 full turn per 3 min
-      // Slightly tilted X-axis wobble helps reveal the depth/volume of the cloud
-      cloudRef.current.rotation.y = elapsed * 0.035
+      // Slow auto-rotation — pauses gracefully while user is actively exploring
+      const autoSpeed = dragRef.current.isDragging ? 0 : 0.035
+      cloudRef.current.rotation.y = elapsed * autoSpeed
       cloudRef.current.rotation.x = Math.sin(elapsed * 0.018) * 0.18
     }
 
@@ -349,7 +377,7 @@ export function ArchiveCanvas({
 }) {
   const key         = signaturePoints.slice(0, 4).map(v => v.toFixed(3)).join(",")
   const gyroRef     = useRef<GyroState>({ beta: 0, gamma: 0, active: false })
-  const dragRef     = useRef<DragState>({ deltaX: 0, deltaY: 0, isDragging: false })
+  const dragRef     = useRef<DragState>({ deltaX: 0, deltaY: 0, velX: 0, velY: 0, isDragging: false })
   const zoomRef     = useRef({ z: 1.0 })   // camera Z: 0.3 (close) → 2.5 (far)
   const gyroPermRef = useRef(false)
 
@@ -374,8 +402,8 @@ export function ArchiveCanvas({
       }
     }
 
-    // Touch / pointer — single finger: drag-to-look, two fingers: pinch-to-zoom
-    let lastX = 0
+    // Touch / pointer — single finger: free-look in all directions, two fingers: pinch-to-zoom
+    let lastX = 0, lastY = 0
     let lastPinchDist = 0
 
     function getPinchDist(e: TouchEvent) {
@@ -389,7 +417,10 @@ export function ArchiveCanvas({
       requestGyro()
       if (e.touches.length === 1) {
         lastX = e.touches[0].clientX
+        lastY = e.touches[0].clientY
         dragRef.current.isDragging = true
+        dragRef.current.velX = 0
+        dragRef.current.velY = 0
       } else if (e.touches.length === 2) {
         dragRef.current.isDragging = false
         lastPinchDist = getPinchDist(e)
@@ -401,15 +432,15 @@ export function ArchiveCanvas({
         const dist = getPinchDist(e)
         if (lastPinchDist > 0) {
           const scale = dist / lastPinchDist
-          // Pinch in (scale < 1) = zoom out (increase Z = move back)
-          // Pinch out (scale > 1) = zoom in (decrease Z = move forward)
           zoomRef.current.z = Math.max(0.25, Math.min(2.5, zoomRef.current.z / scale))
         }
         lastPinchDist = dist
         dragRef.current.isDragging = false
       } else if (e.touches.length === 1 && dragRef.current.isDragging) {
         dragRef.current.deltaX += e.touches[0].clientX - lastX
+        dragRef.current.deltaY += e.touches[0].clientY - lastY
         lastX = e.touches[0].clientX
+        lastY = e.touches[0].clientY
       }
     }
 
@@ -425,16 +456,21 @@ export function ArchiveCanvas({
     }
 
     function onPointerDown(e: PointerEvent) {
-      if (e.pointerType === "touch") return  // handled by touch events
+      if (e.pointerType === "touch") return
       requestGyro()
       lastX = e.clientX
+      lastY = e.clientY
       dragRef.current.isDragging = true
+      dragRef.current.velX = 0
+      dragRef.current.velY = 0
     }
     function onPointerMove(e: PointerEvent) {
       if (e.pointerType === "touch") return
       if (!dragRef.current.isDragging) return
       dragRef.current.deltaX += e.clientX - lastX
+      dragRef.current.deltaY += e.clientY - lastY
       lastX = e.clientX
+      lastY = e.clientY
     }
     function onPointerUp(e: PointerEvent) {
       if (e.pointerType !== "touch") dragRef.current.isDragging = false
@@ -479,6 +515,7 @@ export function ArchiveCanvas({
       <CollectiveScene
         signaturePoints={signaturePoints}
         mySignatureId={mySignatureId}
+        dragRef={dragRef}
       />
     </Canvas>
   )
