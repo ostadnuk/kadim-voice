@@ -45,7 +45,7 @@ const T: Record<Language, {
     collectiveSub: "The sum of every voice recorded into Kadim",
     arrival:       "Your signature joins the vessel",
     viewVessel:    "VESSEL",
-    viewList:      "VOICES",
+    viewList:      "ARCHIVE",
     individuals:   "INDIVIDUAL SIGNATURES",
     loading:       "LOADING...",
     noEntries:     "NO ENTRIES YET",
@@ -58,14 +58,14 @@ const T: Record<Language, {
     source:        "Source",
     remote:        "Remote",
     dateLocale:    "en-GB",
-    footer:        "ReactionTime Collective · 2026",
+    footer:        "Created by ReactionTime Collective",
   },
   he: {
     voices:        (n) => `${n.toLocaleString()} ${n === 1 ? "קול" : "קולות"}`,
     collectiveSub: "סכום כל הקולות שנקלטו בקדים",
     arrival:       "חתימתך מצטרפת לכלי",
-    viewVessel:    "כלי",
-    viewList:      "קולות",
+    viewVessel:    "כד",
+    viewList:      "ארכיון",
     individuals:   "חתימות אישיות",
     loading:       "טוען...",
     noEntries:     "אין רשומות עדיין",
@@ -78,14 +78,14 @@ const T: Record<Language, {
     source:        "מקור",
     remote:        "מרחוק",
     dateLocale:    "he-IL",
-    footer:        "זמן תגובה · 2026",
+    footer:        "נוצר על ידי קולקטיב זמן תגובה",
   },
   ar: {
     voices:        (n) => `${n.toLocaleString()} أصوات`,
     collectiveSub: "مجموع كل الأصوات المسجَّلة في قديم",
     arrival:       "توقيعك ينضمّ إلى الإناء",
     viewVessel:    "الإناء",
-    viewList:      "أصوات",
+    viewList:      "الأرشيف",
     individuals:   "التوقيعات الفردية",
     loading:       "جارٍ التحميل...",
     noEntries:     "لا توجد تسجيلات بعد",
@@ -98,7 +98,7 @@ const T: Record<Language, {
     source:        "المصدر",
     remote:        "عن بُعد",
     dateLocale:    "ar-SA",
-    footer:        "زمن الاستجابة · 2026",
+    footer:        "أُنشئ بواسطة كوليكتيف زمن الاستجابة",
   },
 }
 
@@ -118,51 +118,62 @@ function WorldClock() {
   )
 }
 
-// ── Toggle pill ───────────────────────────────────────────────────────────────
+// ── Tab toggle — sharp HUD style, touch-friendly ─────────────────────────────
 
 function ViewToggle({
-  view, onToggle, labelA, labelB,
+  view, onVessel, onList, labelA, labelB,
 }: {
-  view: "vessel" | "list"
-  onToggle: () => void
-  labelA: string
-  labelB: string
+  view:     "vessel" | "list"
+  onVessel: () => void
+  onList:   () => void
+  labelA:   string
+  labelB:   string
 }) {
+  const btnBase: React.CSSProperties = {
+    fontFamily: FONT.base,
+    fontSize: TYPE.hud,
+    letterSpacing: TRACK.caps,
+    fontWeight: 400,
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    minHeight: 44,
+    minWidth: 64,
+    padding: "0 14px",
+    whiteSpace: "nowrap",
+    transition: "opacity 0.2s ease, background 0.2s ease",
+    WebkitTapHighlightColor: "transparent",
+  }
   return (
-    <button
-      onClick={onToggle}
-      style={{
-        display: "flex", alignItems: "center",
-        background: "rgba(200,212,248,0.07)",
-        border: "1px solid rgba(200,212,248,0.14)",
-        borderRadius: 20,
-        padding: "4px 3px",
-        gap: 2,
-        cursor: "pointer",
-        WebkitTapHighlightColor: "transparent",
-      }}
-    >
-      {(["vessel", "list"] as const).map(v => (
-        <span
-          key={v}
-          style={{
-            fontFamily: FONT.base,
-            fontSize: "0.6rem",
-            letterSpacing: TRACK.caps,
-            fontWeight: 400,
-            padding: "4px 10px",
-            borderRadius: 14,
-            color: view === v ? COLOR.bg : COLOR.secondary,
-            background: view === v ? "rgba(200,212,248,0.85)" : "transparent",
-            opacity: view === v ? 1 : 0.45,
-            transition: "all 0.25s ease",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {v === "vessel" ? labelA : labelB}
-        </span>
-      ))}
-    </button>
+    <div style={{
+      display: "flex", alignItems: "stretch",
+      border: `1px solid rgba(200,212,248,0.4)`,
+      overflow: "hidden",
+    }}>
+      <button
+        onClick={onVessel}
+        style={{
+          ...btnBase,
+          color: view === "vessel" ? COLOR.bg : COLOR.text,
+          background: view === "vessel" ? "rgba(200,212,248,0.88)" : "transparent",
+          opacity: view === "vessel" ? 1 : 0.45,
+          borderRight: `1px solid rgba(200,212,248,0.4)`,
+        }}
+      >
+        {labelA}
+      </button>
+      <button
+        onClick={onList}
+        style={{
+          ...btnBase,
+          color: view === "list" ? COLOR.bg : COLOR.text,
+          background: view === "list" ? "rgba(200,212,248,0.88)" : "transparent",
+          opacity: view === "list" ? 1 : 0.45,
+        }}
+      >
+        {labelB}
+      </button>
+    </div>
   )
 }
 
@@ -281,7 +292,8 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
           <DSBack onClick={onBack} />
           <ViewToggle
             view={view}
-            onToggle={() => setView("list")}
+            onVessel={() => setView("vessel")}
+            onList={() => setView("list")}
             labelA={t.viewVessel}
             labelB={t.viewList}
           />
@@ -367,7 +379,8 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
         center={
           <ViewToggle
             view={view}
-            onToggle={() => setView("vessel")}
+            onVessel={() => setView("vessel")}
+            onList={() => setView("list")}
             labelA={t.viewVessel}
             labelB={t.viewList}
           />

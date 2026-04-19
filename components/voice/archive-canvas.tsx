@@ -145,16 +145,26 @@ function CollectiveScene({
     const phase  = new Float32Array(N)
     const jitter = new Float32Array(N * 3)   // small center jitter for entry
 
-    for (let i = 0; i < N; i++) {
-      // Formation positions: Chladni x/y + moderate z spread
-      pos[i * 3]     = flat[i * 3]     * 1.9
-      pos[i * 3 + 1] = flat[i * 3 + 1] * 1.9
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 2.4   // volumetric but not too deep
+    // Max radial extent of Chladni pattern after scaling
+    const CHLADNI_R = 1.5 * 1.9   // DISPLAY_R * scale = 2.85
 
-      // Smaller particles to avoid huge blobs at close camera range
-      sizes[i] = Math.random() < 0.07
-        ? 0.012 + Math.random() * 0.010
-        : 0.003 + Math.random() * 0.007
+    for (let i = 0; i < N; i++) {
+      const xi = flat[i * 3]     * 1.9
+      const yi = flat[i * 3 + 1] * 1.9
+
+      // Ellipsoid z-distribution: center has full depth, edges taper to 0
+      // — this makes the cloud feel like a 3D vessel shape, not a flat disk
+      const r2     = xi * xi + yi * yi
+      const zScale = Math.sqrt(Math.max(0, 1 - r2 / (CHLADNI_R * CHLADNI_R))) * 2.4
+
+      pos[i * 3]     = xi
+      pos[i * 3 + 1] = yi
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 2 * zScale
+
+      // Larger particles so the cloud reads as a dense glowing mass, not stars
+      sizes[i] = Math.random() < 0.10
+        ? 0.025 + Math.random() * 0.022   // bright accent dots (10%)
+        : 0.009 + Math.random() * 0.014   // base cloud (90%)
       phase[i] = Math.random() * Math.PI * 2
 
       // Entry: start near center with small jitter, expand to formation
@@ -203,12 +213,13 @@ function CollectiveScene({
 
           vec4 mv = modelViewMatrix * vec4(pos, 1.0);
           // Clamp denominator so close particles don't blow up
-          float dist = max(-mv.z, 0.4);
-          gl_PointSize = size * breath * (380.0 / dist);
+          float dist = max(-mv.z, 0.35);
+          gl_PointSize = size * breath * (520.0 / dist);
           gl_Position  = projectionMatrix * mv;
 
-          float depth = clamp((-mv.z - 0.3) / 4.0, 0.0, 1.0);
-          vAlpha = uOpacity * (0.65 + (1.0 - depth) * 0.35);
+          // Depth-based alpha: nearby particles brighter, far ones dimmer
+          float depth = clamp((-mv.z - 0.2) / 5.0, 0.0, 1.0);
+          vAlpha = uOpacity * (0.75 + (1.0 - depth) * 0.25);
         }
       `,
       fragmentShader: `
@@ -218,7 +229,7 @@ function CollectiveScene({
           vec2  uv   = gl_PointCoord - 0.5;
           float dist = length(uv);
           if (dist > 0.5) discard;
-          float alpha = (1.0 - smoothstep(0.2, 0.5, dist)) * vAlpha;
+          float alpha = (1.0 - smoothstep(0.15, 0.5, dist)) * vAlpha;
           gl_FragColor = vec4(uColor, alpha);
         }
       `,
