@@ -54,7 +54,7 @@ const T: Record<Language, {
     source:        "Source",
     remote:        "Remote",
     dateLocale:    "en-GB",
-    footer:        "Created by ReactionTime Collective · 2026",
+    footer:        "ReactionTime Collective · 2026",
   },
   he: {
     voices:        (n) => `${n.toLocaleString()} ${n === 1 ? "קול" : "קולות"}`,
@@ -72,7 +72,7 @@ const T: Record<Language, {
     source:        "מקור",
     remote:        "מרחוק",
     dateLocale:    "he-IL",
-    footer:        "נוצר בידי קולקטיב ריאקשן טיים · 2026",
+    footer:        "זמן תגובה · 2026",
   },
   ar: {
     voices:        (n) => `${n.toLocaleString()} أصوات`,
@@ -90,7 +90,7 @@ const T: Record<Language, {
     source:        "المصدر",
     remote:        "عن بُعد",
     dateLocale:    "ar-SA",
-    footer:        "من إنتاج كولكتيف ريآكشن تايم · 2026",
+    footer:        "زمن الاستجابة · 2026",
   },
 }
 
@@ -462,11 +462,13 @@ export function ScreenArchive({ language = "en", mySignatureId, onBack }: Screen
           href="https://www.reactiontime.org"
           target="_blank" rel="noopener noreferrer"
           style={{
-            fontFamily: FONT.base, fontWeight: 300,
-            fontSize: TYPE.hud, letterSpacing: TRACK.sm,
-            color: COLOR.text, opacity: 0.35,
-            textDecoration: "none",
-            direction: "ltr",
+            fontFamily: FONT.base, fontWeight: 400,
+            fontSize: TYPE.sm, letterSpacing: TRACK.sm,
+            color: "#c8d4f8", opacity: 0.75,
+            textDecoration: "underline",
+            textDecorationColor: "rgba(200,212,248,0.35)",
+            textUnderlineOffset: "3px",
+            direction: dir,
           }}
         >
           {t.footer}
