@@ -20,7 +20,7 @@ const COPY: Record<Language, {
   blockedMsg: string; settingsHint: string
 }> = {
   en: {
-    hud:         "ALMOST THERE",
+    hud:         "VOICE ORIGIN",
     title:       "Before we finish, I'd love to know where your voice is coming from.",
     venueLine:   "You're at the exhibition. Your location is already confirmed.",
     cta:         "SHARE LOCATION",
@@ -32,7 +32,7 @@ const COPY: Record<Language, {
     settingsHint:"Open your browser or phone Settings → find Location / Permissions → allow access for this site, then try again.",
   },
   he: {
-    hud:         "עוד רגע",
+    hud:         "מקור הקול",
     title:       "לפני סיום אשמח לדעת מאיפה הקול שלך מגיע",
     venueLine:   "אתה בתערוכה. המיקום שלך כבר מאושר.",
     cta:         "שיתוף מיקום",
@@ -44,7 +44,7 @@ const COPY: Record<Language, {
     settingsHint:"פתחו הגדרות הדפדפן או הטלפון ← מיקום / הרשאות ← אפשרו גישה לאתר זה, ואז נסו שוב.",
   },
   ar: {
-    hud:         "لحظة أخيرة",
+    hud:         "مصدر الصوت",
     title:       "قبل الانتهاء، أودّ أن أعرف من أين يأتي صوتك.",
     venueLine:   "أنت في المعرض. موقعك مؤكّد بالفعل.",
     cta:         "مشاركة الموقع",
